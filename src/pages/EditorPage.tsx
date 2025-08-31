@@ -96,14 +96,7 @@ const EditorPage = () => {
     }
   }, [handleHostChange, participants]);
 
-  // Auto-restore host privileges when original owner rejoins
-  useEffect(() => {
-    if (isOwner && user && !effectiveOwner && participants.length > 0) {
-      // Original owner rejoined - restore host privileges
-      setEffectiveOwner(user.id);
-      toast.success("Host privileges restored");
-    }
-  }, [isOwner, user, effectiveOwner, participants.length]);
+  // Host reclaim is handled below with active transport awareness
 
   // Socket.IO connection for real-time sync
   const handleCodeChange = useCallback((newCode: string) => {
@@ -228,6 +221,26 @@ const EditorPage = () => {
   const sendCodeChange = collaborationMethod === 'socket' ? socketSendCode : realtimeSendCode;
   const sendCursorChange = collaborationMethod === 'socket' ? socketSendCursor : realtimeSendCursor;
   const sendLanguageChange = collaborationMethod === 'socket' ? socketSendLanguage : realtimeSendLanguage;
+  const broadcastHostChange = collaborationMethod === 'socket' ? socketBroadcastHostChange : realtimeBroadcastHostChange;
+
+  // Reclaim host when original owner rejoins and no valid host is present
+  useEffect(() => {
+    if (!user) return;
+    const presentIds = new Set(participants.map(p => p.id));
+    const currentOwnerId = effectiveOwner;
+    const shouldReclaim =
+      isOwner && (
+        (participants.length === 1 && presentIds.has(user.id)) ||
+        (currentOwnerId && !presentIds.has(currentOwnerId))
+      );
+
+    if (shouldReclaim && effectiveOwner !== user.id) {
+      setEffectiveOwner(user.id);
+      handleHostChange(user.id);
+      broadcastHostChange?.(user.id);
+      toast.success("Host privileges restored");
+    }
+  }, [participants, isOwner, user, effectiveOwner, handleHostChange, broadcastHostChange]);
 
   const handleEditorChange = (value: string) => {
     setCode(value);

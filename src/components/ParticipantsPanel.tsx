@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Crown, Dot, ChevronRight, ChevronDown, X, PanelRightOpen } from "lucide-react";
+import { Users, Crown, Dot, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,25 +25,20 @@ interface ParticipantsPanelProps {
 }
 
 export function ParticipantsPanel({ participants, isOwner, currentUserId, onRemove, className }: ParticipantsPanelProps) {
-  const [panelState, setPanelState] = useState<'open' | 'minimized' | 'closed'>('open');
+  const [panelState, setPanelState] = useState<'open' | 'closed'>('open');
 
   if (panelState === 'closed') {
     return (
-      <div className="fixed right-0 top-1/2 -translate-y-1/2 z-50">
+      <div className="fixed right-3 top-1/2 -translate-y-1/2 z-50">
         <Button
-          variant="outline"
-          size="sm"
+          variant="default"
+          size="icon"
           onClick={() => setPanelState('open')}
-          className="rounded-l-md rounded-r-none border-r-0 px-2 py-8 flex flex-col gap-2 bg-card/95 backdrop-blur-sm shadow-lg"
+          aria-label="Open participants"
+          className="h-10 w-10 rounded-full shadow-lg relative"
         >
-          <PanelRightOpen className="h-4 w-4" />
-          <div 
-            className="text-xs font-medium transform -rotate-90 whitespace-nowrap"
-            style={{ writingMode: 'vertical-rl' }}
-          >
-            Participants
-          </div>
-          <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+          <Users className="h-5 w-5" />
+          <Badge variant="secondary" className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] leading-4 rounded-full">
             {participants.length}
           </Badge>
         </Button>
@@ -52,30 +47,18 @@ export function ParticipantsPanel({ participants, isOwner, currentUserId, onRemo
   }
 
   return (
-    <Card className={`border-l border-border transition-all duration-200 ${panelState === 'minimized' ? 'w-12' : 'w-64'} ${className}`}>
+    <Card className={`border-l border-border transition-all duration-200 fixed right-3 top-20 bottom-3 w-[85vw] max-w-sm z-50 sm:relative sm:w-64 ${className}`}>
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setPanelState(panelState === 'minimized' ? 'open' : 'minimized')}
-            className="h-6 w-6 p-0"
-          >
-            {panelState === 'minimized' ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-          </Button>
-          {panelState === 'open' && (
-            <>
-              <Users className="h-4 w-4" />
-              <span>Participants ({participants.length})</span>
-            </>
-          )}
-          {panelState === 'minimized' && <Users className="h-4 w-4" />}
+          <Users className="h-4 w-4" />
+          <span>Participants ({participants.length})</span>
           <div className="flex-1" />
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setPanelState('closed')}
             className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+            aria-label="Close participants"
           >
             <X className="h-3 w-3" />
           </Button>
