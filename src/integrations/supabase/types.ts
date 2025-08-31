@@ -14,26 +14,117 @@ export type Database = {
   }
   public: {
     Tables: {
+      room_events: {
+        Row: {
+          created_at: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          room_id: string
+          user_email: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          room_id: string
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          room_id?: string
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_events_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_participants: {
+        Row: {
+          created_at: string
+          cursor_position: number | null
+          id: string
+          last_seen: string
+          room_id: string
+          user_email: string | null
+          user_id: string | null
+          user_name: string
+        }
+        Insert: {
+          created_at?: string
+          cursor_position?: number | null
+          id?: string
+          last_seen?: string
+          room_id: string
+          user_email?: string | null
+          user_id?: string | null
+          user_name: string
+        }
+        Update: {
+          created_at?: string
+          cursor_position?: number | null
+          id?: string
+          last_seen?: string
+          room_id?: string
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_participants_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
           code_content: string | null
           created_at: string
           id: string
+          is_active: boolean | null
           language: string | null
+          max_participants: number | null
+          owner_id: string | null
           updated_at: string
         }
         Insert: {
           code_content?: string | null
           created_at?: string
           id: string
+          is_active?: boolean | null
           language?: string | null
+          max_participants?: number | null
+          owner_id?: string | null
           updated_at?: string
         }
         Update: {
           code_content?: string | null
           created_at?: string
           id?: string
+          is_active?: boolean | null
           language?: string | null
+          max_participants?: number | null
+          owner_id?: string | null
           updated_at?: string
         }
         Relationships: []
