@@ -21,7 +21,9 @@ const io = new Server(server, {
     origin: [
       "http://localhost:5173", 
       "https://loving-bear-20.lovable.app",
-      "https://linecraft.lovable.app"
+      "https://linecraft.lovable.app",
+      /https:\/\/.*\.lovable\.dev$/,
+      /https:\/\/.*\.sandbox\.lovable\.dev$/
     ],
     methods: ["GET", "POST"],
     credentials: true

@@ -20,9 +20,25 @@ export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave, onCur
     
     try {
       // LineCraft Socket.IO server URL
-      const socket = io(process.env.NODE_ENV === 'production' 
-        ? 'wss://linecraft-server-production.up.railway.app' 
-        : 'ws://localhost:3001', {
+      const getSocketUrl = () => {
+        // First try environment variable
+        const envUrl = import.meta.env.VITE_SOCKET_SERVER_URL;
+        if (envUrl) return envUrl;
+        
+        // Fallback based on current domain
+        const currentHost = window.location.hostname;
+        if (currentHost.includes('lovable.dev') || currentHost.includes('localhost')) {
+          return 'https://linecraft-server-production.up.railway.app';
+        }
+        
+        // Default production URL
+        return 'https://linecraft-server-production.up.railway.app';
+      };
+
+      const socketUrl = getSocketUrl();
+      console.log('useSocket: Connecting to:', socketUrl);
+      
+      const socket = io(socketUrl, {
         // Add connection options to handle failures gracefully
         timeout: 10000,
         autoConnect: true,
@@ -54,7 +70,7 @@ export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave, onCur
         setConnectionStatus('error');
       });
 
-      socket.on('reconnecting', () => {
+      socket.io.on('reconnect_attempt', () => {
         console.log('useSocket: Reconnecting to LineCraft server...');
         setConnectionStatus('connecting');
       });
