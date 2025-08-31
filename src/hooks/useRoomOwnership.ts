@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -6,6 +6,7 @@ export const useRoomOwnership = (roomId: string) => {
   const { user } = useUser();
   const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [effectiveOwner, setEffectiveOwner] = useState<string | null>(null);
 
   useEffect(() => {
     const checkOwnership = async () => {
@@ -42,5 +43,11 @@ export const useRoomOwnership = (roomId: string) => {
     checkOwnership();
   }, [user, roomId]);
 
-  return { isOwner, loading };
+  const handleHostChange = useCallback((newEffectiveOwner: string) => {
+    setEffectiveOwner(newEffectiveOwner);
+  }, []);
+
+  const isEffectiveOwner = effectiveOwner ? effectiveOwner === user?.id : isOwner;
+
+  return { isOwner, loading, isEffectiveOwner, handleHostChange };
 };

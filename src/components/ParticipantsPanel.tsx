@@ -1,4 +1,5 @@
-import { Users, Crown, Dot } from "lucide-react";
+import { useState } from "react";
+import { Users, Crown, Dot, ChevronRight, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,21 +21,37 @@ interface ParticipantsPanelProps {
   isOwner: boolean;
   currentUserId?: string;
   onRemove?: (userId: string) => void;
+  className?: string;
 }
 
-export function ParticipantsPanel({ participants, isOwner, currentUserId, onRemove }: ParticipantsPanelProps) {
+export function ParticipantsPanel({ participants, isOwner, currentUserId, onRemove, className }: ParticipantsPanelProps) {
+  const [isMinimized, setIsMinimized] = useState(false);
 
   return (
-    <Card className="w-64 h-full border-l border-border">
+    <Card className={`w-64 border-l border-border transition-all duration-200 ${isMinimized ? 'w-12' : 'w-64'} ${className}`}>
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          Participants ({participants.length})
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsMinimized(!isMinimized)}
+            className="h-6 w-6 p-0"
+          >
+            {isMinimized ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          </Button>
+          {!isMinimized && (
+            <>
+              <Users className="h-4 w-4" />
+              <span>Participants ({participants.length})</span>
+            </>
+          )}
+          {isMinimized && <Users className="h-4 w-4" />}
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-0">
-        <ScrollArea className="h-[calc(100vh-200px)]">
-          <div className="space-y-2 p-4 pt-0">
+      {!isMinimized && (
+        <CardContent className="p-0">
+          <ScrollArea className="h-[calc(100vh-200px)]">
+            <div className="space-y-2 p-4 pt-0">
             {participants.map((participant) => (
               <div
                 key={participant.id}
@@ -80,9 +97,10 @@ export function ParticipantsPanel({ participants, isOwner, currentUserId, onRemo
                 No participants yet
               </div>
             )}
-          </div>
-        </ScrollArea>
-      </CardContent>
-    </Card>
+              </div>
+            </ScrollArea>
+          </CardContent>
+        )}
+      </Card>
   );
 }

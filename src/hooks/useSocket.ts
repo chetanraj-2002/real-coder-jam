@@ -10,9 +10,10 @@ interface UseSocketProps {
   onParticipantsUpdate?: (participants: any[]) => void;
   onLanguageChange?: (language: string) => void;
   onKick?: (targetUserId: string) => void;
+  onHostChange?: (newOwner: string, isYou: boolean) => void;
 }
 
-export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave, onCursorChange, onParticipantsUpdate, onLanguageChange, onKick }: UseSocketProps) => {
+export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave, onCursorChange, onParticipantsUpdate, onLanguageChange, onKick, onHostChange }: UseSocketProps) => {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
   const [lastError, setLastError] = useState<string | null>(null);
@@ -108,6 +109,13 @@ export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave, onCur
         socket.on('kick', onKick);
       }
 
+      if (onHostChange) {
+        socket.on('host-change', (data) => {
+          const isYou = data.newOwner === data.currentUserId;
+          onHostChange(data.newOwner, isYou);
+        });
+      }
+
       return () => {
         console.log('useSocket: Cleaning up socket connection');
         if (errorTimeoutRef.current) {
@@ -149,6 +157,12 @@ export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave, onCur
     }
   };
 
+  const broadcastHostChange = (newOwner: string) => {
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('host-change', { roomId, newOwner });
+    }
+  };
+
   return {
     isConnected,
     connectionStatus,
@@ -157,5 +171,6 @@ export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave, onCur
     sendCursorChange,
     sendLanguageChange,
     kickParticipant,
+    broadcastHostChange
   };
 };

@@ -22,6 +22,8 @@ import {
   Terminal
 } from "lucide-react";
 import { toast } from "sonner";
+import { ConnectionStatus } from "@/components/ConnectionStatus";
+import codingBackground from "@/assets/coding-background.jpg";
 
 const EditorPage = () => {
   const { roomId } = useParams();
@@ -33,6 +35,7 @@ const EditorPage = () => {
   const [participants, setParticipants] = useState<any[]>([]);
   const [cursorPositions, setCursorPositions] = useState<Map<string, { line: number; column: number }>>(new Map());
   const [collaborationMethod, setCollaborationMethod] = useState<'socket' | 'supabase' | null>(null);
+  const [effectiveOwner, setEffectiveOwner] = useState<string | null>(null);
   
   // Store last room for rejoin functionality
   useEffect(() => {
@@ -56,8 +59,20 @@ const EditorPage = () => {
   // Load room data from Supabase
   const { code, setCode, language, setLanguage, loading } = useRoom(roomId || '');
   
-  // Check room ownership
-  const { isOwner, loading: ownershipLoading } = useRoomOwnership(roomId || '');
+  // Check room ownership  
+  const { isOwner, loading: ownershipLoading, isEffectiveOwner, handleHostChange } = useRoomOwnership(roomId || '');
+  
+  const handleHostChangeEvent = useCallback((newOwner: string, isYou: boolean) => {
+    setEffectiveOwner(newOwner);
+    handleHostChange(newOwner);
+    
+    if (isYou) {
+      toast.success("You are now the room host");
+    } else {
+      const newOwnerName = participants.find(p => p.id === newOwner)?.name || "Unknown";
+      toast.info(`${newOwnerName} is now the room host`);
+    }
+  }, [handleHostChange, participants]);
 
   // Socket.IO connection for real-time sync
   const handleCodeChange = useCallback((newCode: string) => {
@@ -114,15 +129,6 @@ const EditorPage = () => {
     }
   }, [user, roomId, navigate]);
 
-  const handleRemoveParticipant = useCallback((targetUserId: string) => {
-    if (collaborationMethod === 'socket') {
-      socketKickParticipant(targetUserId);
-    } else {
-      realtimeKickParticipant(targetUserId);
-    }
-    toast.success("Participant removed");
-  }, [collaborationMethod]);
-
   // Socket.IO connection
   const { 
     isConnected: socketConnected, 
@@ -130,7 +136,8 @@ const EditorPage = () => {
     sendCodeChange: socketSendCode, 
     sendCursorChange: socketSendCursor,
     sendLanguageChange: socketSendLanguage,
-    kickParticipant: socketKickParticipant
+    kickParticipant: socketKickParticipant,
+    broadcastHostChange: socketBroadcastHostChange
   } = useSocket({
     roomId: roomId || '',
     onCodeChange: handleCodeChange,
@@ -140,6 +147,7 @@ const EditorPage = () => {
     onParticipantsUpdate: handleParticipantsUpdate,
     onLanguageChange: handleLanguageChange,
     onKick: handleKick,
+    onHostChange: handleHostChangeEvent,
   });
 
   // Supabase Realtime fallback
@@ -149,7 +157,8 @@ const EditorPage = () => {
     sendCodeChange: realtimeSendCode, 
     sendCursorChange: realtimeSendCursor,
     sendLanguageChange: realtimeSendLanguage,
-    kickParticipant: realtimeKickParticipant
+    kickParticipant: realtimeKickParticipant,
+    broadcastHostChange: realtimeBroadcastHostChange
   } = useRealtime({
     roomId: roomId || '',
     onCodeChange: handleCodeChange,
@@ -159,6 +168,7 @@ const EditorPage = () => {
     onParticipantsUpdate: handleParticipantsUpdate,
     onLanguageChange: handleLanguageChange,
     onKick: handleKick,
+    onHostChange: handleHostChangeEvent,
   });
 
   // Determine active collaboration method
@@ -171,6 +181,15 @@ const EditorPage = () => {
       setCollaborationMethod(null);
     }
   }, [socketConnected, socketStatus, realtimeConnected, realtimeStatus]);
+
+  const handleRemoveParticipant = useCallback((targetUserId: string) => {
+    if (collaborationMethod === 'socket') {
+      socketKickParticipant?.(targetUserId);
+    } else {
+      realtimeKickParticipant?.(targetUserId);
+    }
+    toast.success("Participant removed");
+  }, [collaborationMethod, socketKickParticipant, realtimeKickParticipant]);
 
   // Use active method for sending
   const isConnected = collaborationMethod === 'socket' ? socketConnected : realtimeConnected;
@@ -228,9 +247,14 @@ const EditorPage = () => {
 
   return (
     <SignedIn>
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-screen bg-background flex flex-col relative">
+        {/* Light mode subtle background */}
+        <div 
+          className="absolute inset-0 opacity-[0.02] dark:opacity-0 bg-cover bg-center bg-no-repeat pointer-events-none"
+          style={{ backgroundImage: `url(${codingBackground})` }}
+        />
       {/* Header */}
-      <header className="border-b border-border px-4 py-3">
+      <header className="border-b border-border px-4 py-3 relative z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
@@ -283,26 +307,10 @@ const EditorPage = () => {
               </div>
             )}
             
-            <div className="flex items-center gap-2 text-xs">
-              <div className={`h-2 w-2 rounded-full ${
-                connectionStatus === 'connected' ? 'bg-accent animate-pulse' :
-                connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' :
-                connectionStatus === 'error' ? 'bg-destructive' :
-                'bg-muted-foreground'
-              }`} />
-              <span className={
-                connectionStatus === 'connected' ? 'text-accent' :
-                connectionStatus === 'connecting' ? 'text-yellow-500' :
-                connectionStatus === 'error' ? 'text-destructive' :
-                'text-muted-foreground'
-              }>
-                {connectionStatus === 'connected' ? 
-                  `Live (${collaborationMethod === 'socket' ? 'Socket.IO' : 'Supabase'})` :
-                 connectionStatus === 'connecting' ? 'Connecting...' :
-                 connectionStatus === 'error' ? 'Error' :
-                 'Offline'}
-              </span>
-            </div>
+            <ConnectionStatus 
+              isConnected={isConnected}
+              method={collaborationMethod || 'none'}
+            />
             <Button 
               variant="default" 
               size="sm" 
@@ -321,7 +329,7 @@ const EditorPage = () => {
         </div>
       </header>
 
-      <div className="flex-1 flex">
+      <div className="flex-1 flex relative z-10">
         {/* Main Editor */}
         <main className="flex-1 flex flex-col">
           {/* Language Selector Bar */}
@@ -332,11 +340,11 @@ const EditorPage = () => {
                 onChange={(e) => {
                   const newLanguage = e.target.value;
                   setLanguage(newLanguage);
-                  if (isOwner) {
+                  if (isEffectiveOwner) {
                     sendLanguageChange(newLanguage);
                   }
                 }}
-                disabled={!isOwner && !ownershipLoading}
+                disabled={!isEffectiveOwner && !ownershipLoading}
                 className="px-3 py-1 text-sm bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <option value="javascript">JavaScript</option>
@@ -348,9 +356,9 @@ const EditorPage = () => {
                 <option value="css">CSS</option>
                 <option value="json">JSON</option>
               </select>
-              {!isOwner && !ownershipLoading && (
+              {!isEffectiveOwner && !ownershipLoading && (
                 <span className="text-xs text-muted-foreground">
-                  Only room owner can change language
+                  Only room host can change language
                 </span>
               )}
             </div>
@@ -378,9 +386,9 @@ const EditorPage = () => {
               participants={participants.map(p => ({
                 ...p,
                 cursor: cursorPositions.get(p.id),
-                isOwner: p.id === user?.id
+                isOwner: p.id === (effectiveOwner || (isOwner ? user?.id : null))
               }))}
-              isOwner={isOwner}
+              isOwner={isEffectiveOwner}
               currentUserId={user?.id}
               onRemove={handleRemoveParticipant}
             />

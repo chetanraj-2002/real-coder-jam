@@ -15,6 +15,40 @@ const Index = () => {
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const navigate = useNavigate();
 
+  // Refresh rejoin timer on app exit
+  useEffect(() => {
+    const refreshRejoinTimer = () => {
+      const stored = localStorage.getItem('lastRoom');
+      if (stored) {
+        try {
+          const roomData = JSON.parse(stored);
+          const newExpiryTime = Date.now() + 5 * 60 * 1000; // 5 minutes from now
+          const updatedRoomData = { ...roomData, expiresAt: new Date(newExpiryTime).toISOString() };
+          localStorage.setItem('lastRoom', JSON.stringify(updatedRoomData));
+        } catch (error) {
+          // Handle error silently
+        }
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      refreshRejoinTimer();
+    };
+
+    const handleBackButton = () => {
+      refreshRejoinTimer();
+    };
+
+    // Add event listeners
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handleBackButton);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handleBackButton);
+    };
+  }, []);
+
   const generateRoomId = () => {
     const id = Math.random().toString(36).substring(2, 8).toUpperCase();
     setRoomId(id);

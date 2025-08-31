@@ -11,6 +11,7 @@ interface UseRealtimeProps {
   onParticipantsUpdate?: (participants: any[]) => void;
   onLanguageChange?: (language: string) => void;
   onKick?: (targetUserId: string) => void;
+  onHostChange?: (newOwner: string, isYou: boolean) => void;
 }
 
 export const useRealtime = ({ 
@@ -19,9 +20,10 @@ export const useRealtime = ({
   onUserJoin, 
   onUserLeave, 
   onCursorChange, 
-  onParticipantsUpdate,
-  onLanguageChange,
-  onKick
+  onParticipantsUpdate, 
+  onLanguageChange, 
+  onKick,
+  onHostChange 
 }: UseRealtimeProps) => {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
@@ -35,6 +37,7 @@ export const useRealtime = ({
   const onParticipantsUpdateRef = useRef(onParticipantsUpdate);
   const onLanguageChangeRef = useRef(onLanguageChange);
   const onKickRef = useRef(onKick);
+  const onHostChangeRef = useRef(onHostChange);
 
   // Update refs when props change
   useEffect(() => {
@@ -45,7 +48,8 @@ export const useRealtime = ({
     onParticipantsUpdateRef.current = onParticipantsUpdate;
     onLanguageChangeRef.current = onLanguageChange;
     onKickRef.current = onKick;
-  }, [onCodeChange, onUserJoin, onUserLeave, onCursorChange, onParticipantsUpdate, onLanguageChange, onKick]);
+    onHostChangeRef.current = onHostChange;
+  }, [onCodeChange, onUserJoin, onUserLeave, onCursorChange, onParticipantsUpdate, onLanguageChange, onKick, onHostChange]);
 
   useEffect(() => {
     if (!user || !roomId) return;
@@ -99,6 +103,11 @@ export const useRealtime = ({
       .on('broadcast', { event: 'kick' }, ({ payload }) => {
         console.log('useRealtime: Kick received');
         onKickRef.current?.(payload.targetUserId);
+      })
+      .on('broadcast', { event: 'host-change' }, ({ payload }) => {
+        console.log('useRealtime: Host change received');
+        const isYou = payload.newOwner === user?.id;
+        onHostChangeRef.current?.(payload.newOwner, isYou);
       })
       .subscribe(async (status) => {
         console.log('useRealtime: Subscription status:', status);
@@ -163,6 +172,16 @@ export const useRealtime = ({
     }
   }, [isConnected, roomId]);
 
+  const broadcastHostChange = useCallback((newOwner: string) => {
+    if (channelRef.current && isConnected) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'host-change',
+        payload: { newOwner, roomId }
+      });
+    }
+  }, [isConnected, roomId]);
+
   return {
     isConnected,
     connectionStatus,
@@ -170,5 +189,6 @@ export const useRealtime = ({
     sendCursorChange,
     sendLanguageChange,
     kickParticipant,
+    broadcastHostChange
   };
 };
