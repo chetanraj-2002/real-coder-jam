@@ -74,18 +74,24 @@ const EditorPage = () => {
     navigate("/");
   }, [roomId, user, navigate]);
 
-  // Redirect to home if not authenticated
-  useEffect(() => {
-    if (!user) {
-      navigate('/', { replace: true });
-    }
-  }, [user, navigate]);
-
   // Load room data from Supabase
   const { code, setCode, language, setLanguage, loading } = useRoom(roomId || '');
   
   // Check room ownership  
   const { isOwner, loading: ownershipLoading, isEffectiveOwner, handleHostChange } = useRoomOwnership(roomId || '');
+
+  // Handle authentication and navigation
+  useEffect(() => {
+    // Don't redirect immediately - give time for auth to load
+    const timer = setTimeout(() => {
+      if (!user && !loading) {
+        console.log('User not authenticated, redirecting to home');
+        navigate('/', { replace: true });
+      }
+    }, 2000); // Wait 2 seconds for auth to load
+
+    return () => clearTimeout(timer);
+  }, [user, navigate, loading]);
   
   const handleHostChangeEvent = useCallback((newOwner: string, isYou: boolean) => {
     setEffectiveOwner(newOwner);
@@ -326,6 +332,20 @@ const EditorPage = () => {
     }
   };
 
+
+  // Show loading screen while authentication and room data loads
+  if (!user || loading || ownershipLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+          <p className="text-muted-foreground">
+            {!user ? 'Authenticating...' : 'Loading room...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <SignedIn>

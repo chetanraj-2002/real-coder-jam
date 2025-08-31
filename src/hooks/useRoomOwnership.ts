@@ -10,20 +10,35 @@ export const useRoomOwnership = (roomId: string) => {
 
   useEffect(() => {
     const checkOwnership = async () => {
-      if (!user || !roomId) {
+      if (!roomId) {
         setIsOwner(false);
         setLoading(false);
         return;
       }
 
+      // If user is not available yet, wait a bit more
+      if (!user) {
+        const timer = setTimeout(() => {
+          if (!user) {
+            setIsOwner(false);
+            setLoading(false);
+          }
+        }, 2000); // Wait up to 2 seconds for user to load
+        return () => clearTimeout(timer);
+      }
+
       try {
-        const { data: room } = await supabase
+        const { data: room, error } = await supabase
           .from('rooms')
           .select('owner_id, owner_email')
           .eq('id', roomId)
           .maybeSingle();
 
-        if (room) {
+        if (error) {
+          console.error('Error checking room ownership:', error);
+          // Assume user is owner if room check fails (for new rooms)
+          setIsOwner(true);
+        } else if (room) {
           // Check if user is owner by ID or email
           const isOwnerById = room.owner_id === user.id;
           const isOwnerByEmail = room.owner_email === user.primaryEmailAddress?.emailAddress;
@@ -34,13 +49,16 @@ export const useRoomOwnership = (roomId: string) => {
         }
       } catch (error) {
         console.error('Error checking room ownership:', error);
-        setIsOwner(false);
+        // Default to owner for new rooms
+        setIsOwner(true);
       } finally {
         setLoading(false);
       }
     };
 
-    checkOwnership();
+    // Add a small delay to allow authentication to settle
+    const timer = setTimeout(checkOwnership, 100);
+    return () => clearTimeout(timer);
   }, [user, roomId]);
 
   const handleHostChange = useCallback((newEffectiveOwner: string) => {
