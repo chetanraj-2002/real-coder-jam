@@ -34,6 +34,18 @@ const EditorPage = () => {
   const [cursorPositions, setCursorPositions] = useState<Map<string, { line: number; column: number }>>(new Map());
   const [collaborationMethod, setCollaborationMethod] = useState<'socket' | 'supabase' | null>(null);
   
+  // Store last room for rejoin functionality
+  useEffect(() => {
+    if (roomId && user) {
+      const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+      localStorage.setItem('lastRoom', JSON.stringify({
+        roomId,
+        expiresAt,
+        name: `Room ${roomId}`
+      }));
+    }
+  }, [roomId, user]);
+
   // Redirect to home if not authenticated
   useEffect(() => {
     if (!user) {
@@ -74,15 +86,51 @@ const EditorPage = () => {
   }, []);
 
   const handleParticipantsUpdate = useCallback((participantsList: any[]) => {
-    setParticipants(participantsList);
+    // Normalize participants from different transports
+    const normalized = participantsList.map(p => ({
+      id: p.id || p.user_id,
+      name: p.name || p.user_name,
+      email: p.email || p.user_email,
+      isOwner: p.isOwner
+    }));
+    setParticipants(normalized);
   }, []);
+
+  const handleLanguageChange = useCallback((newLanguage: string) => {
+    setLanguage(newLanguage);
+  }, [setLanguage]);
+
+  const handleKick = useCallback((targetUserId: string) => {
+    if (user && targetUserId === user.id) {
+      // Store rejoin token for 5 minutes
+      const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+      localStorage.setItem('lastRoom', JSON.stringify({
+        roomId,
+        expiresAt,
+        name: `Room ${roomId}`
+      }));
+      toast.error("You were removed from the room");
+      navigate('/');
+    }
+  }, [user, roomId, navigate]);
+
+  const handleRemoveParticipant = useCallback((targetUserId: string) => {
+    if (collaborationMethod === 'socket') {
+      socketKickParticipant(targetUserId);
+    } else {
+      realtimeKickParticipant(targetUserId);
+    }
+    toast.success("Participant removed");
+  }, [collaborationMethod]);
 
   // Socket.IO connection
   const { 
     isConnected: socketConnected, 
     connectionStatus: socketStatus, 
     sendCodeChange: socketSendCode, 
-    sendCursorChange: socketSendCursor 
+    sendCursorChange: socketSendCursor,
+    sendLanguageChange: socketSendLanguage,
+    kickParticipant: socketKickParticipant
   } = useSocket({
     roomId: roomId || '',
     onCodeChange: handleCodeChange,
@@ -90,6 +138,8 @@ const EditorPage = () => {
     onUserLeave: handleUserLeave,
     onCursorChange: handleCursorChange,
     onParticipantsUpdate: handleParticipantsUpdate,
+    onLanguageChange: handleLanguageChange,
+    onKick: handleKick,
   });
 
   // Supabase Realtime fallback
@@ -97,7 +147,9 @@ const EditorPage = () => {
     isConnected: realtimeConnected, 
     connectionStatus: realtimeStatus, 
     sendCodeChange: realtimeSendCode, 
-    sendCursorChange: realtimeSendCursor 
+    sendCursorChange: realtimeSendCursor,
+    sendLanguageChange: realtimeSendLanguage,
+    kickParticipant: realtimeKickParticipant
   } = useRealtime({
     roomId: roomId || '',
     onCodeChange: handleCodeChange,
@@ -105,6 +157,8 @@ const EditorPage = () => {
     onUserLeave: handleUserLeave,
     onCursorChange: handleCursorChange,
     onParticipantsUpdate: handleParticipantsUpdate,
+    onLanguageChange: handleLanguageChange,
+    onKick: handleKick,
   });
 
   // Determine active collaboration method
@@ -123,6 +177,7 @@ const EditorPage = () => {
   const connectionStatus = collaborationMethod === 'socket' ? socketStatus : realtimeStatus;
   const sendCodeChange = collaborationMethod === 'socket' ? socketSendCode : realtimeSendCode;
   const sendCursorChange = collaborationMethod === 'socket' ? socketSendCursor : realtimeSendCursor;
+  const sendLanguageChange = collaborationMethod === 'socket' ? socketSendLanguage : realtimeSendLanguage;
 
   const handleEditorChange = (value: string) => {
     setCode(value);
@@ -202,7 +257,32 @@ const EditorPage = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            {/* Participants Strip */}
+            {participants.length > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-2">
+                  {participants.slice(0, 3).map((participant) => (
+                    <div
+                      key={participant.id}
+                      className="h-6 w-6 rounded-full bg-primary/10 border border-background flex items-center justify-center text-xs font-medium"
+                      title={participant.name}
+                    >
+                      {participant.name?.charAt(0).toUpperCase()}
+                    </div>
+                  ))}
+                  {participants.length > 3 && (
+                    <div className="h-6 w-6 rounded-full bg-muted border border-background flex items-center justify-center text-xs font-medium">
+                      +{participants.length - 3}
+                    </div>
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {participants.length} user{participants.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+            )}
+            
             <div className="flex items-center gap-2 text-xs">
               <div className={`h-2 w-2 rounded-full ${
                 connectionStatus === 'connected' ? 'bg-accent animate-pulse' :
@@ -249,7 +329,13 @@ const EditorPage = () => {
             <div className="flex items-center gap-4">
               <select
                 value={language}
-                onChange={(e) => setLanguage(e.target.value)}
+                onChange={(e) => {
+                  const newLanguage = e.target.value;
+                  setLanguage(newLanguage);
+                  if (isOwner) {
+                    sendLanguageChange(newLanguage);
+                  }
+                }}
                 disabled={!isOwner && !ownershipLoading}
                 className="px-3 py-1 text-sm bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -287,17 +373,17 @@ const EditorPage = () => {
               )}
             </div>
 
-            {/* Participants Panel - Only for room owners */}
-            {isOwner && (
-              <ParticipantsPanel
-                participants={participants.map(p => ({
-                  ...p,
-                  cursor: cursorPositions.get(p.id),
-                  isOwner: p.id === user?.id
-                }))}
-                isOwner={isOwner}
-              />
-            )}
+            {/* Participants Panel - Visible to all */}
+            <ParticipantsPanel
+              participants={participants.map(p => ({
+                ...p,
+                cursor: cursorPositions.get(p.id),
+                isOwner: p.id === user?.id
+              }))}
+              isOwner={isOwner}
+              currentUserId={user?.id}
+              onRemove={handleRemoveParticipant}
+            />
 
             {/* Output Panel */}
             {showOutput && (

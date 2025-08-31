@@ -9,6 +9,8 @@ interface UseRealtimeProps {
   onUserLeave: (userId: string) => void;
   onCursorChange?: (data: { userId: string; cursor: { line: number; column: number } }) => void;
   onParticipantsUpdate?: (participants: any[]) => void;
+  onLanguageChange?: (language: string) => void;
+  onKick?: (targetUserId: string) => void;
 }
 
 export const useRealtime = ({ 
@@ -17,7 +19,9 @@ export const useRealtime = ({
   onUserJoin, 
   onUserLeave, 
   onCursorChange, 
-  onParticipantsUpdate 
+  onParticipantsUpdate,
+  onLanguageChange,
+  onKick
 }: UseRealtimeProps) => {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
@@ -29,6 +33,8 @@ export const useRealtime = ({
   const onUserLeaveRef = useRef(onUserLeave);
   const onCursorChangeRef = useRef(onCursorChange);
   const onParticipantsUpdateRef = useRef(onParticipantsUpdate);
+  const onLanguageChangeRef = useRef(onLanguageChange);
+  const onKickRef = useRef(onKick);
 
   // Update refs when props change
   useEffect(() => {
@@ -37,7 +43,9 @@ export const useRealtime = ({
     onUserLeaveRef.current = onUserLeave;
     onCursorChangeRef.current = onCursorChange;
     onParticipantsUpdateRef.current = onParticipantsUpdate;
-  }, [onCodeChange, onUserJoin, onUserLeave, onCursorChange, onParticipantsUpdate]);
+    onLanguageChangeRef.current = onLanguageChange;
+    onKickRef.current = onKick;
+  }, [onCodeChange, onUserJoin, onUserLeave, onCursorChange, onParticipantsUpdate, onLanguageChange, onKick]);
 
   useEffect(() => {
     if (!user || !roomId) return;
@@ -84,6 +92,14 @@ export const useRealtime = ({
         console.log('useRealtime: Cursor change received');
         onCursorChangeRef.current?.(payload);
       })
+      .on('broadcast', { event: 'language-change' }, ({ payload }) => {
+        console.log('useRealtime: Language change received');
+        onLanguageChangeRef.current?.(payload.language);
+      })
+      .on('broadcast', { event: 'kick' }, ({ payload }) => {
+        console.log('useRealtime: Kick received');
+        onKickRef.current?.(payload.targetUserId);
+      })
       .subscribe(async (status) => {
         console.log('useRealtime: Subscription status:', status);
         if (status === 'SUBSCRIBED') {
@@ -127,10 +143,32 @@ export const useRealtime = ({
     }
   }, [isConnected, roomId, user]);
 
+  const sendLanguageChange = useCallback((language: string) => {
+    if (channelRef.current && isConnected) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'language-change',
+        payload: { language, roomId }
+      });
+    }
+  }, [isConnected, roomId]);
+
+  const kickParticipant = useCallback((targetUserId: string) => {
+    if (channelRef.current && isConnected) {
+      channelRef.current.send({
+        type: 'broadcast',
+        event: 'kick',
+        payload: { targetUserId, roomId }
+      });
+    }
+  }, [isConnected, roomId]);
+
   return {
     isConnected,
     connectionStatus,
     sendCodeChange,
     sendCursorChange,
+    sendLanguageChange,
+    kickParticipant,
   };
 };

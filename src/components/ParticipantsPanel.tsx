@@ -1,6 +1,7 @@
 import { Users, Crown, Dot } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Participant {
@@ -17,10 +18,11 @@ interface Participant {
 interface ParticipantsPanelProps {
   participants: Participant[];
   isOwner: boolean;
+  currentUserId?: string;
+  onRemove?: (userId: string) => void;
 }
 
-export function ParticipantsPanel({ participants, isOwner }: ParticipantsPanelProps) {
-  if (!isOwner) return null;
+export function ParticipantsPanel({ participants, isOwner, currentUserId, onRemove }: ParticipantsPanelProps) {
 
   return (
     <Card className="w-64 h-full border-l border-border">
@@ -54,11 +56,23 @@ export function ParticipantsPanel({ participants, isOwner }: ParticipantsPanelPr
                     </p>
                   </div>
                 </div>
-                {participant.cursor && (
-                  <Badge variant="secondary" className="text-xs">
-                    {participant.cursor.line}:{participant.cursor.column}
-                  </Badge>
-                )}
+                <div className="flex items-center gap-2">
+                  {participant.cursor && (
+                    <Badge variant="secondary" className="text-xs">
+                      {participant.cursor.line}:{participant.cursor.column}
+                    </Badge>
+                  )}
+                  {isOwner && onRemove && participant.id !== currentUserId && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onRemove(participant.id)}
+                      className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      ×
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
             {participants.length === 0 && (

@@ -7,7 +7,6 @@ import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import EditorPage from "./pages/EditorPage";
 import AuthPage from "./pages/AuthPage";
-import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,7 +26,6 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<AuthPage />} />
-            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/editor/:roomId" element={<EditorPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

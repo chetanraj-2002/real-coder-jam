@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import codingHeroBg from "@/assets/coding-hero-bg.jpg";
 
 const Index = () => {
   const [roomId, setRoomId] = useState("");
+  const [lastRoom, setLastRoom] = useState<{roomId: string; expiresAt: number; name: string} | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number>(0);
   const navigate = useNavigate();
 
   const generateRoomId = () => {
@@ -27,6 +29,56 @@ const Index = () => {
   const handleCreateRoom = () => {
     const id = Math.random().toString(36).substring(2, 8).toUpperCase();
     navigate(`/editor/${id}`);
+  };
+
+  const handleRejoinRoom = () => {
+    if (lastRoom) {
+      navigate(`/editor/${lastRoom.roomId}`);
+      localStorage.removeItem('lastRoom');
+      setLastRoom(null);
+    }
+  };
+
+  const clearLastRoom = () => {
+    localStorage.removeItem('lastRoom');
+    setLastRoom(null);
+    setTimeLeft(0);
+  };
+
+  // Check for last room on mount and set up timer
+  useEffect(() => {
+    const stored = localStorage.getItem('lastRoom');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed.expiresAt > Date.now()) {
+          setLastRoom(parsed);
+          setTimeLeft(Math.ceil((parsed.expiresAt - Date.now()) / 1000));
+        } else {
+          localStorage.removeItem('lastRoom');
+        }
+      } catch (e) {
+        localStorage.removeItem('lastRoom');
+      }
+    }
+  }, []);
+
+  // Timer countdown
+  useEffect(() => {
+    if (timeLeft > 0) {
+      const timer = setTimeout(() => {
+        setTimeLeft(timeLeft - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (lastRoom && timeLeft === 0) {
+      clearLastRoom();
+    }
+  }, [timeLeft, lastRoom]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -63,14 +115,6 @@ const Index = () => {
                 </SignInButton>
               </SignedOut>
               <SignedIn>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate("/dashboard")}
-                  className="gap-2 backdrop-blur-sm"
-                >
-                  Dashboard
-                </Button>
                 <UserButton afterSignOutUrl="/" />
               </SignedIn>
             </div>
@@ -99,6 +143,40 @@ const Index = () => {
           {/* Room Management */}
           <div className="max-w-md mx-auto">
             <SignedIn>
+              {/* Rejoin Last Room */}
+              {lastRoom && timeLeft > 0 && (
+                <Card className="border border-accent/50 backdrop-blur-sm bg-accent/5 mb-4">
+                  <CardContent className="p-6 space-y-4">
+                    <div className="text-center">
+                      <h3 className="text-lg font-semibold text-accent">Rejoin Recent Room</h3>
+                      <p className="text-sm text-muted-foreground">
+                        You were recently in {lastRoom.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Expires in {formatTime(timeLeft)}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={handleRejoinRoom}
+                        variant="default"
+                        className="flex-1"
+                      >
+                        Rejoin Room
+                      </Button>
+                      <Button 
+                        onClick={clearLastRoom}
+                        variant="ghost"
+                        size="sm"
+                        className="px-3"
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
               <Card className="border border-border/50 backdrop-blur-sm bg-card/80">
                 <CardContent className="p-8 space-y-6">
                   <div className="space-y-4">
