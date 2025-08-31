@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from '@clerk/clerk-react';
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,10 +13,7 @@ const Index = () => {
   const [roomId, setRoomId] = useState("");
   const [lastRoom, setLastRoom] = useState<{roomId: string; expiresAt: number; name: string} | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0);
-  const [creating, setCreating] = useState(false);
   const navigate = useNavigate();
-  const { user } = useUser();
-  const { toast } = useToast();
 
 
   const generateRoomId = () => {
@@ -32,52 +27,9 @@ const Index = () => {
     }
   };
 
-  const handleCreateRoom = async () => {
-    if (creating) return;
-
-    setCreating(true);
-
-    try {
-      let attempts = 0;
-      const maxAttempts = 5;
-
-      while (attempts < maxAttempts) {
-        const id = Math.random().toString(36).substring(2, 8).toUpperCase();
-
-        const { error } = await supabase
-          .from('rooms')
-          .insert({
-            id,
-            // owner_id is a UUID in DB; we don't have a UUID from Clerk, so leave it null
-            owner_email: user?.primaryEmailAddress?.emailAddress || null,
-            is_active: true,
-            language: 'javascript',
-          });
-
-        if (!error) {
-          navigate(`/editor/${id}`);
-          return;
-        }
-
-        // If it's not a primary key conflict, break and show error
-        if (!error.message.includes('duplicate key') && !error.message.includes('already exists')) {
-          throw error;
-        }
-
-        attempts++;
-      }
-
-      throw new Error('Failed to generate unique room ID after multiple attempts');
-    } catch (error) {
-      console.error('Failed to create room:', error);
-      toast({
-        title: 'Failed to create room',
-        description: 'Please try again in a moment.',
-        variant: 'destructive',
-      });
-    } finally {
-      setCreating(false);
-    }
+  const handleCreateRoom = () => {
+    const id = Math.random().toString(36).substring(2, 8).toUpperCase();
+    navigate(`/editor/${id}`);
   };
 
   const handleRejoinRoom = () => {
@@ -257,10 +209,9 @@ const Index = () => {
                   <Button
                     onClick={handleCreateRoom}
                     className="w-full gap-2 h-12"
-                    disabled={creating}
                   >
                     <Plus className="h-5 w-5" />
-                    {creating ? "Creating..." : "Create New Room"}
+                    Create New Room
                   </Button>
                 </CardContent>
               </Card>
