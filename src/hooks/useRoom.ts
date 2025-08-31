@@ -9,14 +9,16 @@ export const useRoom = (roomId: string) => {
   // Load room data from Supabase
   useEffect(() => {
     const loadRoom = async () => {
+      console.log('useRoom: Loading room data for:', roomId);
       try {
         let { data: room } = await supabase
           .from('rooms')
           .select('*')
           .eq('id', roomId)
-          .single();
+          .maybeSingle();
 
         if (!room) {
+          console.log('useRoom: Room not found, creating new room');
           // Create new room if it doesn't exist
           const { data: newRoom } = await supabase
             .from('rooms')
@@ -43,25 +45,30 @@ for (let i = 0; i < 10; i++) {
         }
 
         if (room) {
+          console.log('useRoom: Room loaded successfully');
           setCode(room.code_content || '');
           setLanguage(room.language || 'javascript');
         }
       } catch (error) {
-        console.error('Error loading room:', error);
+        console.error('useRoom: Error loading room:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    loadRoom();
+    if (roomId) {
+      loadRoom();
+    }
   }, [roomId]);
 
   // Save code to Supabase (debounced)
   useEffect(() => {
-    if (loading) return;
+    if (loading || !roomId) return;
 
+    console.log('useRoom: Setting up auto-save for room:', roomId);
     const saveTimer = setTimeout(async () => {
       try {
+        console.log('useRoom: Auto-saving code changes');
         await supabase
           .from('rooms')
           .upsert({ 
@@ -70,12 +77,16 @@ for (let i = 0; i < 10; i++) {
             language: language,
             updated_at: new Date().toISOString()
           });
+        console.log('useRoom: Code saved successfully');
       } catch (error) {
-        console.error('Error saving code:', error);
+        console.error('useRoom: Error saving code:', error);
       }
     }, 2000);
 
-    return () => clearTimeout(saveTimer);
+    return () => {
+      console.log('useRoom: Clearing auto-save timer');
+      clearTimeout(saveTimer);
+    };
   }, [code, language, roomId, loading]);
 
   return {
