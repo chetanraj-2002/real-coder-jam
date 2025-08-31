@@ -77,7 +77,7 @@ const EditorPage = () => {
   }, [roomId, user, navigate]);
 
   // Load room data from Supabase
-  const { code, setCode, language, setLanguage, loading } = useRoom(roomId || '');
+  const { code, setCode, language, setLanguage, loading, roomExists } = useRoom(roomId || '');
   
   // Check room ownership  
   const { isOwner, loading: ownershipLoading, isEffectiveOwner, handleHostChange } = useRoomOwnership(roomId || '');
@@ -333,6 +333,99 @@ const EditorPage = () => {
           </p>
         </div>
       </div>
+    );
+  }
+
+  // Show error message if room doesn't exist
+  if (!roomExists) {
+    return (
+      <SignedIn>
+        <div className="min-h-screen bg-background flex flex-col relative">
+          {/* Light mode subtle background */}
+          <div 
+            className="absolute inset-0 opacity-[0.06] dark:opacity-0 bg-cover bg-center bg-no-repeat pointer-events-none"
+            style={{ backgroundImage: `url(${codingBackground})` }}
+          />
+          
+          {/* Header */}
+          <header className="border-b border-border px-4 py-3 relative z-10 flex-shrink-0">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4 min-w-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleBackToHome}
+                  className="gap-2 flex-shrink-0"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Back</span>
+                </Button>
+                <Separator orientation="vertical" className="h-4" />
+                <div className="flex items-center gap-2 min-w-0">
+                  <Code2 className="h-4 w-4 text-destructive flex-shrink-0" />
+                  <span className="font-medium truncate text-destructive">Room {roomId} - Not Found</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsConsoleOpen(!isConsoleOpen)}
+                  className="gap-2 flex-shrink-0"
+                >
+                  <Terminal className="h-4 w-4" />
+                  <span className="hidden sm:inline">{isConsoleOpen ? 'Hide' : 'Show'} Terminal</span>
+                </Button>
+              </div>
+            </div>
+          </header>
+
+          {/* Error Message */}
+          <div className="flex-1 flex items-center justify-center relative z-10">
+            <div className="text-center space-y-6 max-w-md mx-auto px-4">
+              <div className="space-y-2">
+                <h1 className="text-2xl font-semibold text-destructive">Room Not Found</h1>
+                <p className="text-muted-foreground">
+                  The room <span className="font-mono font-medium">{roomId}</span> does not exist or has expired.
+                </p>
+              </div>
+              
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  You can still use the JavaScript terminal below to run code.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                  <Button onClick={handleBackToHome} className="gap-2">
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Home
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsConsoleOpen(true)}
+                    className="gap-2"
+                  >
+                    <Terminal className="h-4 w-4" />
+                    Open Terminal
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Console */}
+          <Console
+            isOpen={isConsoleOpen}
+            onClose={() => setIsConsoleOpen(false)}
+            output={output}
+            error={error}
+            executionTime={executionTime}
+            isRunning={isRunning}
+            onRunCode={handleRunCode}
+            canRun={!!code.trim() && !isRunning}
+          />
+        </div>
+      </SignedIn>
     );
   }
 

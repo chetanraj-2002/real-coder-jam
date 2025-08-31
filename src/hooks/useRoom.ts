@@ -7,6 +7,7 @@ export const useRoom = (roomId: string) => {
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('javascript');
   const [loading, setLoading] = useState(true);
+  const [roomExists, setRoomExists] = useState<boolean>(true);
 
   // Load room data from Supabase
   useEffect(() => {
@@ -30,35 +31,14 @@ export const useRoom = (roomId: string) => {
         }
 
         if (!room) {
-          console.log('useRoom: Room not found, creating new room');
-          // Create new room - delay creation if user not available yet
-          const createRoom = async () => {
-            const { data: newRoom, error: createError } = await supabase
-              .from('rooms')
-              .insert([{ 
-                id: roomId,
-                owner_id: user?.id || null,
-                owner_email: user?.primaryEmailAddress?.emailAddress || null,
-                code_content: `// Welcome to LineCraft!
-// Start coding together in room ${roomId}`,
-                language: 'javascript'
-              }])
-              .select()
-              .single();
-            
-            if (createError) {
-              console.error('useRoom: Error creating room:', createError);
-              // Set default content even if creation fails
-              setCode(`// Welcome to LineCraft!
-// Start coding together in room ${roomId}`);
-              setLanguage('javascript');
-              return;
-            }
-            
-            room = newRoom;
-          };
-
-          await createRoom();
+          console.log('useRoom: Room not found');
+          setRoomExists(false);
+          // Set default content for standalone terminal use
+          setCode(`// Room ${roomId} does not exist
+// You can still use the terminal below to run JavaScript code`);
+          setLanguage('javascript');
+        } else {
+          setRoomExists(true);
         }
 
         if (room) {
@@ -82,9 +62,9 @@ export const useRoom = (roomId: string) => {
     return () => clearTimeout(timer);
   }, [roomId, user?.id, user?.primaryEmailAddress?.emailAddress]);
 
-  // Save code to Supabase (debounced)
+  // Save code to Supabase (debounced) - only if room exists
   useEffect(() => {
-    if (loading || !roomId) return;
+    if (loading || !roomId || !roomExists) return;
 
     console.log('useRoom: Setting up auto-save for room:', roomId);
     const saveTimer = setTimeout(async () => {
@@ -108,13 +88,14 @@ export const useRoom = (roomId: string) => {
       console.log('useRoom: Clearing auto-save timer');
       clearTimeout(saveTimer);
     };
-  }, [code, language, roomId, loading]);
+  }, [code, language, roomId, loading, roomExists]);
 
   return {
     code,
     setCode,
     language,
     setLanguage,
-    loading
+    loading,
+    roomExists
   };
 };
