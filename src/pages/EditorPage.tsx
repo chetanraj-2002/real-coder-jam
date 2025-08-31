@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CodeEditor } from "@/components/CodeEditor";
+import { ParticipantsPanel } from "@/components/ParticipantsPanel";
 import { useSocket } from "@/hooks/useSocket";
 import { useRoom } from "@/hooks/useRoom";
 import { useRoomOwnership } from "@/hooks/useRoomOwnership";
@@ -28,6 +29,8 @@ const EditorPage = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState<string>("");
   const [showOutput, setShowOutput] = useState(false);
+  const [participants, setParticipants] = useState<any[]>([]);
+  const [cursorPositions, setCursorPositions] = useState<Map<string, { line: number; column: number }>>(new Map());
   
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -48,23 +51,46 @@ const EditorPage = () => {
   }, [setCode]);
 
   const handleUserJoin = useCallback((userData: any) => {
-    // Removed toast for cleaner UX
+    setParticipants(prev => [...prev.filter(p => p.id !== userData.id), userData]);
   }, []);
 
   const handleUserLeave = useCallback((userId: string) => {
-    // Removed toast for cleaner UX
+    setParticipants(prev => prev.filter(p => p.id !== userId));
+    setCursorPositions(prev => {
+      const newPositions = new Map(prev);
+      newPositions.delete(userId);
+      return newPositions;
+    });
   }, []);
 
-  const { isConnected, connectionStatus, sendCodeChange } = useSocket({
+  const handleCursorChange = useCallback((data: { userId: string; cursor: { line: number; column: number } }) => {
+    setCursorPositions(prev => {
+      const newPositions = new Map(prev);
+      newPositions.set(data.userId, data.cursor);
+      return newPositions;
+    });
+  }, []);
+
+  const handleParticipantsUpdate = useCallback((participantsList: any[]) => {
+    setParticipants(participantsList);
+  }, []);
+
+  const { isConnected, connectionStatus, sendCodeChange, sendCursorChange } = useSocket({
     roomId: roomId || '',
     onCodeChange: handleCodeChange,
     onUserJoin: handleUserJoin,
     onUserLeave: handleUserLeave,
+    onCursorChange: handleCursorChange,
+    onParticipantsUpdate: handleParticipantsUpdate,
   });
 
   const handleEditorChange = (value: string) => {
     setCode(value);
     sendCodeChange(value);
+  };
+
+  const handleCursorPositionChange = (cursor: { line: number; column: number }) => {
+    sendCursorChange(cursor);
   };
 
   const copyRoomId = () => {
@@ -215,9 +241,22 @@ const EditorPage = () => {
                   onChange={handleEditorChange}
                   language={language}
                   roomId={roomId || ""}
+                  onCursorPositionChange={handleCursorPositionChange}
                 />
               )}
             </div>
+
+            {/* Participants Panel - Only for room owners */}
+            {isOwner && (
+              <ParticipantsPanel
+                participants={participants.map(p => ({
+                  ...p,
+                  cursor: cursorPositions.get(p.id),
+                  isOwner: p.id === user?.id
+                }))}
+                isOwner={isOwner}
+              />
+            )}
 
             {/* Output Panel */}
             {showOutput && (

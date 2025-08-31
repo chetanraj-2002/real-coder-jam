@@ -54,7 +54,9 @@ io.on('connection', (socket) => {
     room.participants.set(socket.id, {
       id: socket.id,
       name: `User-${socket.id.slice(0, 6)}`,
-      joinedAt: new Date().toISOString()
+      email: `user-${socket.id.slice(0, 6)}@linecraft.dev`,
+      joinedAt: new Date().toISOString(),
+      cursor: { line: 1, column: 1 }
     });
     
     // Send current room state to the new participant
@@ -64,12 +66,17 @@ io.on('connection', (socket) => {
       participants: Array.from(room.participants.values())
     });
     
-    // Notify others about new participant
+    // Notify others about new participant and send updated participants list
+    const participantsList = Array.from(room.participants.values());
     socket.to(roomId).emit('user-joined', {
       id: socket.id,
       name: `User-${socket.id.slice(0, 6)}`,
+      email: `user-${socket.id.slice(0, 6)}@linecraft.dev`,
       joinedAt: new Date().toISOString()
     });
+    
+    // Send updated participants list to all users in room
+    io.to(roomId).emit('participants-update', participantsList);
     
     console.log(`Room ${roomId} now has ${room.participants.size} participants`);
   });
@@ -85,6 +92,24 @@ io.on('connection', (socket) => {
     
     // Broadcast to all other users in the room
     socket.to(roomId).emit('code-change', code);
+  });
+
+  socket.on('cursor-change', ({ roomId, cursor }) => {
+    console.log(`Cursor change in room ${roomId} from ${socket.id}:`, cursor);
+    
+    // Update participant cursor position
+    if (rooms.has(roomId)) {
+      const room = rooms.get(roomId);
+      if (room.participants.has(socket.id)) {
+        room.participants.get(socket.id).cursor = cursor;
+      }
+    }
+    
+    // Broadcast cursor position to all other users in the room
+    socket.to(roomId).emit('cursor-change', {
+      userId: socket.id,
+      cursor
+    });
   });
 
   socket.on('language-change', ({ roomId, language }) => {
@@ -108,6 +133,10 @@ io.on('connection', (socket) => {
       if (room.participants.has(socket.id)) {
         room.participants.delete(socket.id);
         socket.to(roomId).emit('user-left', socket.id);
+        
+        // Send updated participants list to remaining users
+        const participantsList = Array.from(room.participants.values());
+        socket.to(roomId).emit('participants-update', participantsList);
         
         console.log(`User ${socket.id} left room ${roomId}`);
         

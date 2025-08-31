@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Code2, Users, Zap, Share, Plus } from "lucide-react";
+import { Code2, Users, Zap, Share, Plus, Sparkles } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import heroImage from "@/assets/linecraft-hero.jpg";
 
 const Index = () => {
   const [roomId, setRoomId] = useState("");
@@ -33,97 +35,105 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative">
+    <div className="min-h-screen bg-gradient-background flex flex-col relative overflow-hidden">
       {/* Background Image */}
       <div 
-        className="absolute inset-0 opacity-10 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(/src/assets/hero-background.jpg)` }}
+        className="absolute inset-0 opacity-20 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${heroImage})` }}
       />
+      
       {/* Header */}
-      <header className="border-b border-border px-6 py-4">
-        <div className="container max-w-4xl mx-auto">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Code2 className="h-6 w-6 text-primary" />
-                <div>
-                <h1 className="text-lg font-semibold">
-                    LineCraft
-                  </h1>
-                </div>
+      <header className="border-b border-border/50 backdrop-blur-sm px-6 py-4 relative z-10">
+        <div className="container max-w-6xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Code2 className="h-8 w-8 text-primary" />
+                <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-accent animate-pulse" />
               </div>
-              <div className="flex items-center gap-3">
-                <SignedOut>
-                  <SignInButton fallbackRedirectUrl="/" forceRedirectUrl="/">
-                    <Button variant="outline" size="sm">
-                      Sign In
-                    </Button>
-                  </SignInButton>
-                </SignedOut>
-                <SignedIn>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate("/dashboard")}
-                    className="gap-2"
-                  >
-                    Dashboard
-                  </Button>
-                  <UserButton afterSignOutUrl="/" />
-                </SignedIn>
+              <div>
+                <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                  LineCraft
+                </h1>
+                <p className="text-xs text-muted-foreground">Collaborative Coding</p>
               </div>
             </div>
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              <SignedOut>
+                <SignInButton fallbackRedirectUrl="/" forceRedirectUrl="/">
+                  <Button variant="outline" size="sm" className="backdrop-blur-sm">
+                    Sign In
+                  </Button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("/dashboard")}
+                  className="gap-2 backdrop-blur-sm"
+                >
+                  Dashboard
+                </Button>
+                <UserButton afterSignOutUrl="/" />
+              </SignedIn>
+            </div>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center px-6 py-12 relative z-10">
-        <div className="container max-w-md mx-auto">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold mb-4">
-              Code Together, Create Together
+      <main className="flex-1 flex items-center justify-center px-6 py-16 relative z-10">
+        <div className="container max-w-lg mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-5xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
+              LineCraft
             </h2>
-            <p className="text-muted-foreground">
-              Real-time collaborative coding with instant sync and execution
+            <p className="text-xl text-muted-foreground mb-4">
+              Real-time collaborative coding platform
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Code together, debug together, create together
             </p>
           </div>
 
           {/* Room Management */}
           <div>
             <SignedIn>
-              <Card className="border border-border">
-                <CardContent className="p-6 space-y-4">
-                  <div className="flex gap-2">
+              <Card className="border border-border/50 backdrop-blur-sm bg-card/80">
+                <CardContent className="p-8 space-y-6">
+                  <div className="space-y-4">
                     <Input
                       value={roomId}
                       onChange={(e) => setRoomId(e.target.value.toUpperCase())}
-                      placeholder="Enter room ID to join"
-                      className="font-mono text-center"
+                      placeholder="Enter 6-digit room ID"
+                      className="font-mono text-center text-lg h-14 backdrop-blur-sm bg-input/80"
                       maxLength={6}
                       onKeyDown={(e) => e.key === 'Enter' && joinRoom()}
                     />
+                    <Button 
+                      onClick={joinRoom}
+                      variant="outline"
+                      className="w-full h-12 backdrop-blur-sm"
+                      disabled={!roomId.trim()}
+                    >
+                      Join Room
+                    </Button>
                   </div>
 
-                  <Button 
-                    onClick={joinRoom}
-                    variant="outline"
-                    className="w-full"
-                    disabled={!roomId.trim()}
-                  >
-                    Join Room
-                  </Button>
-
                   <div className="relative">
-                    <Separator />
-                    <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
+                    <Separator className="opacity-50" />
+                    <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-3 text-xs text-muted-foreground">
                       or
                     </span>
                   </div>
 
                   <Button
                     onClick={handleCreateRoom}
-                    className="w-full gap-2"
+                    className="w-full gap-2 h-12 shadow-glow"
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-5 w-5" />
                     Create New Room
                   </Button>
                 </CardContent>
@@ -131,17 +141,17 @@ const Index = () => {
             </SignedIn>
 
             <SignedOut>
-              <Card className="border border-border">
-                <CardContent className="p-6 space-y-4">
-                  <div className="text-center space-y-2">
-                    <h3 className="font-medium">Get Started</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Sign in to start collaborating
+              <Card className="border border-border/50 backdrop-blur-sm bg-card/80">
+                <CardContent className="p-8 space-y-6">
+                  <div className="text-center space-y-3">
+                    <h3 className="text-lg font-semibold">Ready to start coding?</h3>
+                    <p className="text-muted-foreground">
+                      Sign in to create or join collaborative coding sessions
                     </p>
                   </div>
                   <SignInButton fallbackRedirectUrl="/" forceRedirectUrl="/">
-                    <Button className="w-full">
-                      Sign In
+                    <Button className="w-full h-12 shadow-glow">
+                      Get Started
                     </Button>
                   </SignInButton>
                 </CardContent>
@@ -149,34 +159,31 @@ const Index = () => {
             </SignedOut>
           </div>
 
-          {/* Features */}
-          <div className="mt-12 text-center">
-            <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Code2 className="h-4 w-4" />
-                <span>Monaco Editor</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                <span>Real-time Sync</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4" />
-                <span>Code Execution</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Share className="h-4 w-4" />
-                <span>Easy Sharing</span>
-              </div>
-            </div>
-          </div>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-4">
+      {/* Features Footer */}
+      <footer className="border-t border-border/50 backdrop-blur-sm py-6 relative z-10">
         <div className="container max-w-4xl mx-auto px-6">
-          <div className="text-center text-xs text-muted-foreground">
+          <div className="flex justify-center items-center gap-8 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 hover:text-primary transition-colors">
+              <Code2 className="h-4 w-4" />
+              <span>Monaco Editor</span>
+            </div>
+            <div className="flex items-center gap-2 hover:text-accent transition-colors">
+              <Users className="h-4 w-4" />
+              <span>Real-time Sync</span>
+            </div>
+            <div className="flex items-center gap-2 hover:text-primary transition-colors">
+              <Zap className="h-4 w-4" />
+              <span>Code Execution</span>
+            </div>
+            <div className="flex items-center gap-2 hover:text-accent transition-colors">
+              <Share className="h-4 w-4" />
+              <span>Easy Sharing</span>
+            </div>
+          </div>
+          <div className="text-center text-xs text-muted-foreground mt-4">
             <p>Built with React, Monaco Editor & Socket.IO</p>
           </div>
         </div>

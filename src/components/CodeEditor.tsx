@@ -7,9 +7,10 @@ interface CodeEditorProps {
   onChange: (value: string) => void;
   language: string;
   roomId: string;
+  onCursorPositionChange?: (cursor: { line: number; column: number }) => void;
 }
 
-export const CodeEditor = ({ value, onChange, language, roomId }: CodeEditorProps) => {
+export const CodeEditor = ({ value, onChange, language, roomId, onCursorPositionChange }: CodeEditorProps) => {
   const editorRef = useRef<any>(null);
 
   const handleEditorDidMount = (editor: any) => {
@@ -34,6 +35,17 @@ export const CodeEditor = ({ value, onChange, language, roomId }: CodeEditorProp
       cursorSmoothCaretAnimation: 'on',
       smoothScrolling: true,
     });
+
+    // Track cursor position changes
+    if (onCursorPositionChange) {
+      editor.onDidChangeCursorPosition((e: any) => {
+        const position = e.position;
+        onCursorPositionChange({
+          line: position.lineNumber,
+          column: position.column
+        });
+      });
+    }
   };
 
   const handleEditorChange = (value: string | undefined) => {

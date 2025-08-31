@@ -1,9 +1,11 @@
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from '@clerk/clerk-react';
-import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Code, Users, Zap } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Code2, Users, Zap, Share, ArrowRight, Sparkles } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import heroImage from "@/assets/linecraft-hero.jpg";
 
 const AuthPage = () => {
   const navigate = useNavigate();
@@ -13,48 +15,73 @@ const AuthPage = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-background flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 opacity-20 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${heroImage})` }}
+      />
+      
+      {/* Theme Toggle */}
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
         <SignedOut>
-          <Card className="shadow-lg">
-            <CardHeader className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <Code className="h-8 w-8 text-primary" />
-                <h1 className="text-2xl font-bold">LineCraft</h1>
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="relative">
+                <Code2 className="h-10 w-10 text-primary" />
+                <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-accent animate-pulse" />
               </div>
-              <CardTitle>Welcome to LineCraft</CardTitle>
+              <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                LineCraft
+              </h1>
+            </div>
+            <p className="text-muted-foreground">
+              Real-time collaborative coding platform
+            </p>
+          </div>
+
+          <Card className="border border-border/50 backdrop-blur-sm bg-card/80">
+            <CardHeader className="text-center">
+              <CardTitle className="text-xl">Welcome to LineCraft</CardTitle>
               <CardDescription>
-                Join the collaborative coding experience. Sign in or create an account to get started.
+                Choose how you'd like to get started
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <SignInButton fallbackRedirectUrl="/" forceRedirectUrl="/">
-                  <Button variant="outline" className="w-full">
-                    Sign In
-                  </Button>
-                </SignInButton>
-                <SignUpButton fallbackRedirectUrl="/" forceRedirectUrl="/">
-                  <Button className="w-full">
-                    Sign Up
-                  </Button>
-                </SignUpButton>
-              </div>
+            <CardContent className="space-y-6">
+              <SignInButton fallbackRedirectUrl="/" forceRedirectUrl="/">
+                <Button className="w-full shadow-glow" size="lg">
+                  Sign In
+                </Button>
+              </SignInButton>
               
-              <div className="pt-6 border-t">
-                <h3 className="font-semibold mb-3 text-center">Why LineCraft?</h3>
-                <div className="space-y-3">
+              <SignUpButton fallbackRedirectUrl="/" forceRedirectUrl="/">
+                <Button variant="outline" className="w-full backdrop-blur-sm" size="lg">
+                  Create Account
+                </Button>
+              </SignUpButton>
+
+              <div className="pt-4 border-t border-border/50">
+                <h3 className="font-medium mb-4 text-center">What you'll get:</h3>
+                <div className="space-y-3 text-sm">
                   <div className="flex items-center gap-3">
-                    <Users className="h-5 w-5 text-primary" />
-                    <span className="text-sm">Real-time collaboration</span>
+                    <Code2 className="h-4 w-4 text-primary" />
+                    <span>Professional Monaco Editor</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Code className="h-5 w-5 text-primary" />
-                    <span className="text-sm">Monaco code editor</span>
+                    <Users className="h-4 w-4 text-accent" />
+                    <span>Real-time collaborative editing</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Zap className="h-5 w-5 text-primary" />
-                    <span className="text-sm">Instant synchronization</span>
+                    <Zap className="h-4 w-4 text-primary" />
+                    <span>Instant code execution</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Share className="h-4 w-4 text-accent" />
+                    <span>Easy room sharing</span>
                   </div>
                 </div>
               </div>
@@ -63,26 +90,41 @@ const AuthPage = () => {
         </SignedOut>
 
         <SignedIn>
-          <Card className="shadow-lg">
-            <CardHeader className="text-center">
-              <CardTitle>Welcome back!</CardTitle>
-              <CardDescription>
-                You're signed in and ready to collaborate
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-center">
-                <UserButton afterSignOutUrl="/auth" />
+          <div className="text-center space-y-6">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="relative">
+                <Code2 className="h-10 w-10 text-primary" />
+                <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-accent animate-pulse" />
               </div>
-              
-              <Button 
-                onClick={() => navigate('/')} 
-                className="w-full"
-              >
-                Go to Dashboard
-              </Button>
-            </CardContent>
-          </Card>
+              <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                LineCraft
+              </h1>
+            </div>
+            
+            <Card className="border border-border/50 backdrop-blur-sm bg-card/80">
+              <CardContent className="p-8 space-y-6">
+                <div className="text-center space-y-3">
+                  <h2 className="text-xl font-semibold">Welcome back!</h2>
+                  <p className="text-muted-foreground">
+                    Ready to start coding collaboratively?
+                  </p>
+                </div>
+                
+                <Button
+                  onClick={() => navigate("/")}
+                  className="w-full gap-2 shadow-glow"
+                  size="lg"
+                >
+                  Go to Dashboard
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+                
+                <div className="flex justify-center">
+                  <UserButton afterSignOutUrl="/auth" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </SignedIn>
       </div>
     </div>

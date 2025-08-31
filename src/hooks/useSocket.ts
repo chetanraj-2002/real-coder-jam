@@ -6,9 +6,11 @@ interface UseSocketProps {
   onCodeChange: (code: string) => void;
   onUserJoin: (user: any) => void;
   onUserLeave: (userId: string) => void;
+  onCursorChange?: (data: { userId: string; cursor: { line: number; column: number } }) => void;
+  onParticipantsUpdate?: (participants: any[]) => void;
 }
 
-export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave }: UseSocketProps) => {
+export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave, onCursorChange, onParticipantsUpdate }: UseSocketProps) => {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
   const socketRef = useRef<Socket | null>(null);
@@ -60,6 +62,14 @@ export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave }: Use
       socket.on('code-change', onCodeChange);
       socket.on('user-joined', onUserJoin);
       socket.on('user-left', onUserLeave);
+      
+      if (onCursorChange) {
+        socket.on('cursor-change', onCursorChange);
+      }
+      
+      if (onParticipantsUpdate) {
+        socket.on('participants-update', onParticipantsUpdate);
+      }
 
       return () => {
         console.log('useSocket: Cleaning up socket connection');
@@ -81,9 +91,16 @@ export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave }: Use
     }
   };
 
+  const sendCursorChange = (cursor: { line: number; column: number }) => {
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('cursor-change', { roomId, cursor });
+    }
+  };
+
   return {
     isConnected,
     connectionStatus,
     sendCodeChange,
+    sendCursorChange,
   };
 };
