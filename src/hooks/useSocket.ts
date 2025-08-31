@@ -13,7 +13,9 @@ interface UseSocketProps {
 export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave, onCursorChange, onParticipantsUpdate }: UseSocketProps) => {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
+  const [lastError, setLastError] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
+  const errorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     console.log('useSocket: Setting up socket connection for room:', roomId);
@@ -39,14 +41,15 @@ export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave, onCur
       console.log('useSocket: Connecting to:', socketUrl);
       
       const socket = io(socketUrl, {
-        // Add connection options to handle failures gracefully
-        timeout: 10000,
+        timeout: 8000,
         autoConnect: true,
         reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 2000,
+        reconnectionAttempts: 3,
+        reconnectionDelay: 1000,
         forceNew: true,
-        transports: ['websocket']
+        transports: ['websocket', 'polling'],
+        upgrade: true,
+        path: '/socket.io/'
       });
       
       socketRef.current = socket;
@@ -67,7 +70,15 @@ export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave, onCur
       socket.on('connect_error', (error) => {
         console.log('useSocket: Connection error:', error.message);
         setIsConnected(false);
-        setConnectionStatus('error');
+        setLastError(error.message);
+        
+        // Don't immediately set to error, wait a bit to see if connection recovers
+        if (errorTimeoutRef.current) {
+          clearTimeout(errorTimeoutRef.current);
+        }
+        errorTimeoutRef.current = setTimeout(() => {
+          setConnectionStatus('error');
+        }, 2000);
       });
 
       socket.io.on('reconnect_attempt', () => {
@@ -89,6 +100,9 @@ export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave, onCur
 
       return () => {
         console.log('useSocket: Cleaning up socket connection');
+        if (errorTimeoutRef.current) {
+          clearTimeout(errorTimeoutRef.current);
+        }
         socket.disconnect();
       };
     } catch (error) {
@@ -116,6 +130,7 @@ export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave, onCur
   return {
     isConnected,
     connectionStatus,
+    lastError,
     sendCodeChange,
     sendCursorChange,
   };

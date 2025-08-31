@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Code2, Users, Zap, Share, Plus, Sparkles, Monitor, Terminal } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import codingBackground from "@/assets/coding-background.jpg";
+import codingHeroBg from "@/assets/coding-hero-bg.jpg";
 
 const Index = () => {
   const [roomId, setRoomId] = useState("");
@@ -33,8 +33,8 @@ const Index = () => {
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background Image */}
       <div 
-        className="absolute inset-0 opacity-10 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${codingBackground})` }}
+        className="absolute inset-0 opacity-5 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${codingHeroBg})` }}
       />
       
       {/* Header */}
@@ -81,14 +81,17 @@ const Index = () => {
       {/* Hero Section */}
       <section className="py-20 px-6 relative z-10">
         <div className="container max-w-4xl mx-auto text-center">
-          <div className="mb-12">
-            <h2 className="text-4xl md:text-6xl font-bold mb-6 text-foreground">
+          <div className="mb-12 relative">
+            <div className="absolute inset-0 flex items-center justify-center opacity-10">
+              <Terminal className="h-32 w-32 text-primary" />
+            </div>
+            <h2 className="text-4xl md:text-6xl font-bold mb-6 text-foreground relative z-10">
               LineCraft
             </h2>
-            <p className="text-xl text-muted-foreground mb-4">
+            <p className="text-xl md:text-2xl text-muted-foreground mb-4 font-medium relative z-10">
               Real-time collaborative coding platform
             </p>
-            <p className="text-base text-muted-foreground">
+            <p className="text-base md:text-lg text-muted-foreground relative z-10">
               Code together, debug together, create together
             </p>
           </div>
@@ -103,7 +106,7 @@ const Index = () => {
                       value={roomId}
                       onChange={(e) => setRoomId(e.target.value.toUpperCase())}
                       placeholder="Enter 6-digit room ID"
-                      className="font-mono text-center text-lg h-12 backdrop-blur-sm bg-input/80"
+                      className="font-mono text-center text-base md:text-lg h-12 backdrop-blur-sm bg-input/80"
                       maxLength={6}
                       onKeyDown={(e) => e.key === 'Enter' && joinRoom()}
                     />
@@ -139,8 +142,8 @@ const Index = () => {
               <Card className="border border-border/50 backdrop-blur-sm bg-card/80">
                 <CardContent className="p-8 space-y-6">
                   <div className="text-center space-y-3">
-                    <h3 className="text-lg font-semibold">Ready to start coding?</h3>
-                    <p className="text-muted-foreground">
+                    <h3 className="text-lg md:text-xl font-semibold">Ready to start coding?</h3>
+                    <p className="text-sm md:text-base text-muted-foreground">
                       Sign in to create or join collaborative coding sessions
                     </p>
                   </div>
@@ -160,10 +163,10 @@ const Index = () => {
       <section className="py-16 px-6 relative z-10">
         <div className="container max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h3 className="text-2xl font-semibold mb-4 text-foreground">
+            <h3 className="text-2xl md:text-3xl font-semibold mb-4 text-foreground">
               Everything you need for collaborative coding
             </h3>
-            <p className="text-muted-foreground">
+            <p className="text-base md:text-lg text-muted-foreground">
               Powerful features to enhance your development workflow
             </p>
           </div>
@@ -173,8 +176,8 @@ const Index = () => {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10">
                 <Code2 className="h-6 w-6 text-primary" />
               </div>
-              <h4 className="text-lg font-medium text-foreground">Monaco Editor</h4>
-              <p className="text-sm text-muted-foreground">
+              <h4 className="text-lg md:text-xl font-medium text-foreground">Monaco Editor</h4>
+              <p className="text-sm md:text-base text-muted-foreground">
                 Professional code editor with syntax highlighting and IntelliSense
               </p>
             </div>
@@ -183,8 +186,8 @@ const Index = () => {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-accent/10">
                 <Users className="h-6 w-6 text-accent" />
               </div>
-              <h4 className="text-lg font-medium text-foreground">Real-time Sync</h4>
-              <p className="text-sm text-muted-foreground">
+              <h4 className="text-lg md:text-xl font-medium text-foreground">Real-time Sync</h4>
+              <p className="text-sm md:text-base text-muted-foreground">
                 See changes instantly as you and your team code together
               </p>
             </div>
@@ -193,8 +196,8 @@ const Index = () => {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10">
                 <Zap className="h-6 w-6 text-primary" />
               </div>
-              <h4 className="text-lg font-medium text-foreground">Code Execution</h4>
-              <p className="text-sm text-muted-foreground">
+              <h4 className="text-lg md:text-xl font-medium text-foreground">Code Execution</h4>
+              <p className="text-sm md:text-base text-muted-foreground">
                 Run and test your code directly in the browser
               </p>
             </div>
@@ -203,8 +206,8 @@ const Index = () => {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-accent/10">
                 <Share className="h-6 w-6 text-accent" />
               </div>
-              <h4 className="text-lg font-medium text-foreground">Easy Sharing</h4>
-              <p className="text-sm text-muted-foreground">
+              <h4 className="text-lg md:text-xl font-medium text-foreground">Easy Sharing</h4>
+              <p className="text-sm md:text-base text-muted-foreground">
                 Share your coding sessions with a simple room ID
               </p>
             </div>
@@ -215,7 +218,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border/50 backdrop-blur-sm py-6 relative z-10">
         <div className="container max-w-4xl mx-auto px-6">
-          <div className="text-center text-sm text-muted-foreground">
+          <div className="text-center text-sm md:text-base text-muted-foreground">
             <p>Built with React, Monaco Editor & Socket.IO</p>
           </div>
         </div>

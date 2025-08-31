@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { CodeEditor } from "@/components/CodeEditor";
 import { ParticipantsPanel } from "@/components/ParticipantsPanel";
 import { useSocket } from "@/hooks/useSocket";
+import { useRealtime } from "@/hooks/useRealtime";
 import { useRoom } from "@/hooks/useRoom";
 import { useRoomOwnership } from "@/hooks/useRoomOwnership";
 import { runCode, type RunCodeResult } from "@/lib/runCode";
@@ -31,6 +32,7 @@ const EditorPage = () => {
   const [showOutput, setShowOutput] = useState(false);
   const [participants, setParticipants] = useState<any[]>([]);
   const [cursorPositions, setCursorPositions] = useState<Map<string, { line: number; column: number }>>(new Map());
+  const [collaborationMethod, setCollaborationMethod] = useState<'socket' | 'supabase' | null>(null);
   
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -75,7 +77,13 @@ const EditorPage = () => {
     setParticipants(participantsList);
   }, []);
 
-  const { isConnected, connectionStatus, sendCodeChange, sendCursorChange } = useSocket({
+  // Socket.IO connection
+  const { 
+    isConnected: socketConnected, 
+    connectionStatus: socketStatus, 
+    sendCodeChange: socketSendCode, 
+    sendCursorChange: socketSendCursor 
+  } = useSocket({
     roomId: roomId || '',
     onCodeChange: handleCodeChange,
     onUserJoin: handleUserJoin,
@@ -83,6 +91,38 @@ const EditorPage = () => {
     onCursorChange: handleCursorChange,
     onParticipantsUpdate: handleParticipantsUpdate,
   });
+
+  // Supabase Realtime fallback
+  const { 
+    isConnected: realtimeConnected, 
+    connectionStatus: realtimeStatus, 
+    sendCodeChange: realtimeSendCode, 
+    sendCursorChange: realtimeSendCursor 
+  } = useRealtime({
+    roomId: roomId || '',
+    onCodeChange: handleCodeChange,
+    onUserJoin: handleUserJoin,
+    onUserLeave: handleUserLeave,
+    onCursorChange: handleCursorChange,
+    onParticipantsUpdate: handleParticipantsUpdate,
+  });
+
+  // Determine active collaboration method
+  useEffect(() => {
+    if (socketConnected && socketStatus === 'connected') {
+      setCollaborationMethod('socket');
+    } else if (realtimeConnected && realtimeStatus === 'connected') {
+      setCollaborationMethod('supabase');
+    } else {
+      setCollaborationMethod(null);
+    }
+  }, [socketConnected, socketStatus, realtimeConnected, realtimeStatus]);
+
+  // Use active method for sending
+  const isConnected = collaborationMethod === 'socket' ? socketConnected : realtimeConnected;
+  const connectionStatus = collaborationMethod === 'socket' ? socketStatus : realtimeStatus;
+  const sendCodeChange = collaborationMethod === 'socket' ? socketSendCode : realtimeSendCode;
+  const sendCursorChange = collaborationMethod === 'socket' ? socketSendCursor : realtimeSendCursor;
 
   const handleEditorChange = (value: string) => {
     setCode(value);
@@ -176,7 +216,8 @@ const EditorPage = () => {
                 connectionStatus === 'error' ? 'text-destructive' :
                 'text-muted-foreground'
               }>
-                {connectionStatus === 'connected' ? 'Live' :
+                {connectionStatus === 'connected' ? 
+                  `Live (${collaborationMethod === 'socket' ? 'Socket.IO' : 'Supabase'})` :
                  connectionStatus === 'connecting' ? 'Connecting...' :
                  connectionStatus === 'error' ? 'Error' :
                  'Offline'}
