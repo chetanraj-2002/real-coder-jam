@@ -53,10 +53,23 @@ const EditorPage = () => {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      // Also store room info when component unmounts
+      // Store room info when component unmounts (user is leaving)
       handleBeforeUnload();
     };
   }, [roomId, user]);
+
+  // Handle back button navigation with room storage
+  const handleBackToHome = useCallback(() => {
+    if (roomId && user) {
+      const roomData = {
+        roomId,
+        expiresAt: Date.now() + (5 * 60 * 1000), // 5 minutes from now
+        name: `Room ${roomId}`
+      };
+      localStorage.setItem('lastRoom', JSON.stringify(roomData));
+    }
+    navigate("/");
+  }, [roomId, user, navigate]);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -82,6 +95,15 @@ const EditorPage = () => {
       toast.info(`${newOwnerName} is now the room host`);
     }
   }, [handleHostChange, participants]);
+
+  // Auto-restore host privileges when original owner rejoins
+  useEffect(() => {
+    if (isOwner && user && !effectiveOwner && participants.length > 0) {
+      // Original owner rejoined - restore host privileges
+      setEffectiveOwner(user.id);
+      toast.success("Host privileges restored");
+    }
+  }, [isOwner, user, effectiveOwner, participants.length]);
 
   // Socket.IO connection for real-time sync
   const handleCodeChange = useCallback((newCode: string) => {
@@ -269,7 +291,7 @@ const EditorPage = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/")}
+              onClick={handleBackToHome}
               className="gap-2"
             >
               <ArrowLeft className="h-4 w-4" />

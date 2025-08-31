@@ -34,13 +34,16 @@ export function ParticipantsPanel({ participants, isOwner, currentUserId, onRemo
           variant="outline"
           size="sm"
           onClick={() => setPanelState('open')}
-          className="rounded-l-md rounded-r-none border-r-0 px-2 py-6 flex flex-col gap-1 bg-card/95 backdrop-blur-sm"
+          className="rounded-l-md rounded-r-none border-r-0 px-2 py-8 flex flex-col gap-2 bg-card/95 backdrop-blur-sm shadow-lg"
         >
           <PanelRightOpen className="h-4 w-4" />
-          <div className="text-xs font-medium writing-mode-vertical-rl transform rotate-180">
+          <div 
+            className="text-xs font-medium transform -rotate-90 whitespace-nowrap"
+            style={{ writingMode: 'vertical-rl' }}
+          >
             Participants
           </div>
-          <Badge variant="secondary" className="text-xs px-1 py-0">
+          <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
             {participants.length}
           </Badge>
         </Button>

@@ -47,6 +47,13 @@ export const useRoomOwnership = (roomId: string) => {
     setEffectiveOwner(newEffectiveOwner);
   }, []);
 
+  // When the original owner rejoins, they should become effective owner
+  useEffect(() => {
+    if (isOwner && user && !effectiveOwner) {
+      setEffectiveOwner(user.id);
+    }
+  }, [isOwner, user, effectiveOwner]);
+
   const isEffectiveOwner = effectiveOwner ? effectiveOwner === user?.id : isOwner;
 
   return { isOwner, loading, isEffectiveOwner, handleHostChange };
