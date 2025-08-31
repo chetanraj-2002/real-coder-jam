@@ -104,14 +104,28 @@ const EditorPage = () => {
   }, [setCode]);
 
   const handleUserJoin = useCallback((userData: any) => {
-    setParticipants(prev => [...prev.filter(p => p.id !== userData.id), userData]);
+    // Normalize participant data from different transports
+    const normalized = {
+      id: userData.id || userData.user_id || userData.userId,
+      name: userData.name || userData.user_name || userData.userName,
+      email: userData.email || userData.user_email || userData.userEmail,
+      isOwner: userData.isOwner
+    };
+    
+    setParticipants(prev => {
+      // Remove existing entry with same ID and add normalized one
+      const filtered = prev.filter(p => p.id !== normalized.id);
+      return [...filtered, normalized];
+    });
   }, []);
 
   const handleUserLeave = useCallback((userId: string) => {
-    setParticipants(prev => prev.filter(p => p.id !== userId));
+    // Normalize userId from different transports
+    const normalizedId = userId;
+    setParticipants(prev => prev.filter(p => p.id !== normalizedId));
     setCursorPositions(prev => {
       const newPositions = new Map(prev);
-      newPositions.delete(userId);
+      newPositions.delete(normalizedId);
       return newPositions;
     });
   }, []);
@@ -126,13 +140,22 @@ const EditorPage = () => {
 
   const handleParticipantsUpdate = useCallback((participantsList: any[]) => {
     // Normalize participants from different transports
-    const normalized = participantsList.map(p => ({
-      id: p.id || p.user_id,
-      name: p.name || p.user_name,
-      email: p.email || p.user_email,
-      isOwner: p.isOwner
-    }));
-    setParticipants(normalized);
+    const participantMap = new Map();
+    
+    participantsList.forEach(p => {
+      const normalized = {
+        id: p.id || p.user_id || p.userId,
+        name: p.name || p.user_name || p.userName,
+        email: p.email || p.user_email || p.userEmail,
+        isOwner: p.isOwner
+      };
+      // Dedupe by ID
+      if (normalized.id) {
+        participantMap.set(normalized.id, normalized);
+      }
+    });
+    
+    setParticipants(Array.from(participantMap.values()));
   }, []);
 
   const handleLanguageChange = useCallback((newLanguage: string) => {
@@ -223,21 +246,24 @@ const EditorPage = () => {
   const sendLanguageChange = collaborationMethod === 'socket' ? socketSendLanguage : realtimeSendLanguage;
   const broadcastHostChange = collaborationMethod === 'socket' ? socketBroadcastHostChange : realtimeBroadcastHostChange;
 
-  // Reclaim host when original owner rejoins and no valid host is present
+  // Reclaim host when original room creator rejoins
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isOwner || !broadcastHostChange) return;
+    
     const presentIds = new Set(participants.map(p => p.id));
     const currentOwnerId = effectiveOwner;
-    const shouldReclaim =
-      isOwner && (
-        (participants.length === 1 && presentIds.has(user.id)) ||
-        (currentOwnerId && !presentIds.has(currentOwnerId))
-      );
+    
+    // Conditions to reclaim host privileges:
+    // 1. User is alone in the room, OR
+    // 2. Current effective owner is no longer present
+    const shouldReclaim = 
+      (participants.length === 1 && presentIds.has(user.id)) ||
+      (currentOwnerId && !presentIds.has(currentOwnerId));
 
     if (shouldReclaim && effectiveOwner !== user.id) {
       setEffectiveOwner(user.id);
       handleHostChange(user.id);
-      broadcastHostChange?.(user.id);
+      broadcastHostChange(user.id);
       toast.success("Host privileges restored");
     }
   }, [participants, isOwner, user, effectiveOwner, handleHostChange, broadcastHostChange]);

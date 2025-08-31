@@ -29,7 +29,7 @@ export function ParticipantsPanel({ participants, isOwner, currentUserId, onRemo
 
   if (panelState === 'closed') {
     return (
-      <div className="fixed right-3 top-1/2 -translate-y-1/2 z-50">
+      <div className="fixed right-4 top-1/2 -translate-y-1/2 z-50">
         <Button
           variant="default"
           size="icon"
@@ -47,7 +47,7 @@ export function ParticipantsPanel({ participants, isOwner, currentUserId, onRemo
   }
 
   return (
-    <Card className={`border-l border-border transition-all duration-200 fixed right-3 top-20 bottom-3 w-[85vw] max-w-sm z-50 sm:relative sm:w-64 ${className}`}>
+    <Card className={`fixed right-4 top-20 bottom-4 w-[90vw] max-w-[22rem] sm:max-w-[20rem] z-50 rounded-lg border shadow-lg bg-card transition-all duration-200 ${className}`}>
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
           <Users className="h-4 w-4" />
@@ -65,8 +65,8 @@ export function ParticipantsPanel({ participants, isOwner, currentUserId, onRemo
         </CardTitle>
       </CardHeader>
       {panelState === 'open' && (
-        <CardContent className="p-0">
-          <ScrollArea className="h-[calc(100vh-200px)]">
+        <CardContent className="p-0 h-full">
+          <ScrollArea className="h-full">
             <div className="space-y-2 p-4 pt-0">
             {participants.map((participant) => (
               <div
