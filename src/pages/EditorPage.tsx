@@ -2,27 +2,25 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { SignedIn, useUser } from '@clerk/clerk-react';
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CodeEditor } from "@/components/CodeEditor";
 import { ParticipantsPanel } from "@/components/ParticipantsPanel";
+import { Console } from "@/components/Console";
 import { useSocket } from "@/hooks/useSocket";
 import { useRealtime } from "@/hooks/useRealtime";
 import { useRoom } from "@/hooks/useRoom";
 import { useRoomOwnership } from "@/hooks/useRoomOwnership";
 import { runCode, type RunCodeResult } from "@/lib/runCode";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { 
   Code2, 
   Copy, 
   Share, 
   ArrowLeft,
-  Wifi,
-  WifiOff,
   Play,
-  Terminal
+  Terminal,
+  Users
 } from "lucide-react";
-import { MultiTerminal } from "@/components/MultiTerminal";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { toast } from "sonner";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import codingBackground from "@/assets/coding-background.jpg";
@@ -31,11 +29,15 @@ const EditorPage = () => {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const { user } = useUser();
+  const isMobile = useIsMobile();
+  
+  // State
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [executionTime, setExecutionTime] = useState<number>();
-  const [isTerminalCollapsed, setIsTerminalCollapsed] = useState(true);
+  const [isConsoleOpen, setIsConsoleOpen] = useState(false);
+  const [showParticipants, setShowParticipants] = useState(!isMobile);
   const [participants, setParticipants] = useState<any[]>([]);
   const [cursorPositions, setCursorPositions] = useState<Map<string, { line: number; column: number }>>(new Map());
   const [collaborationMethod, setCollaborationMethod] = useState<'socket' | 'supabase' | null>(null);
@@ -57,7 +59,6 @@ const EditorPage = () => {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      // Store room info when component unmounts (user is leaving)
       handleBeforeUnload();
     };
   }, [roomId, user]);
@@ -83,13 +84,12 @@ const EditorPage = () => {
 
   // Handle authentication and navigation
   useEffect(() => {
-    // Don't redirect immediately - give time for auth to load
     const timer = setTimeout(() => {
       if (!user && !loading) {
         console.log('User not authenticated, redirecting to home');
         navigate('/', { replace: true });
       }
-    }, 2000); // Wait 2 seconds for auth to load
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [user, navigate, loading]);
@@ -106,15 +106,12 @@ const EditorPage = () => {
     }
   }, [handleHostChange, participants]);
 
-  // Host reclaim is handled below with active transport awareness
-
   // Socket.IO connection for real-time sync
   const handleCodeChange = useCallback((newCode: string) => {
     setCode(newCode);
   }, [setCode]);
 
   const handleUserJoin = useCallback((userData: any) => {
-    // Normalize participant data from different transports
     const normalized = {
       id: userData.id || userData.user_id || userData.userId,
       name: userData.name || userData.user_name || userData.userName,
@@ -123,14 +120,12 @@ const EditorPage = () => {
     };
     
     setParticipants(prev => {
-      // Remove existing entry with same ID and add normalized one
       const filtered = prev.filter(p => p.id !== normalized.id);
       return [...filtered, normalized];
     });
   }, []);
 
   const handleUserLeave = useCallback((userId: string) => {
-    // Normalize userId from different transports
     const normalizedId = userId;
     setParticipants(prev => prev.filter(p => p.id !== normalizedId));
     setCursorPositions(prev => {
@@ -149,7 +144,6 @@ const EditorPage = () => {
   }, []);
 
   const handleParticipantsUpdate = useCallback((participantsList: any[]) => {
-    // Normalize participants from different transports
     const participantMap = new Map();
     
     participantsList.forEach(p => {
@@ -159,7 +153,6 @@ const EditorPage = () => {
         email: p.email || p.user_email || p.userEmail,
         isOwner: p.isOwner
       };
-      // Dedupe by ID
       if (normalized.id) {
         participantMap.set(normalized.id, normalized);
       }
@@ -174,10 +167,9 @@ const EditorPage = () => {
 
   const handleKick = useCallback((targetUserId: string) => {
     if (user && targetUserId === user.id) {
-      // Store rejoin token for 5 minutes when kicked
       const roomData = {
         roomId,
-        expiresAt: Date.now() + (5 * 60 * 1000), // 5 minutes from now
+        expiresAt: Date.now() + (5 * 60 * 1000),
         name: `Room ${roomId}`
       };
       localStorage.setItem('lastRoom', JSON.stringify(roomData));
@@ -263,9 +255,6 @@ const EditorPage = () => {
     const presentIds = new Set(participants.map(p => p.id));
     const currentOwnerId = effectiveOwner;
     
-    // Conditions to reclaim host privileges:
-    // 1. User is alone in the room, OR
-    // 2. Current effective owner is no longer present
     const shouldReclaim = 
       (participants.length === 1 && presentIds.has(user.id)) ||
       (currentOwnerId && !presentIds.has(currentOwnerId));
@@ -304,7 +293,7 @@ const EditorPage = () => {
 
   const handleRunCode = async () => {
     setIsRunning(true);
-    setIsTerminalCollapsed(false);
+    setIsConsoleOpen(true);
     setError("");
     setOutput("");
     setExecutionTime(undefined);
@@ -357,57 +346,45 @@ const EditorPage = () => {
         />
         
         {/* Header */}
-        <header className="border-b border-border px-4 py-3 relative z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <header className="border-b border-border px-4 py-3 relative z-10 flex-shrink-0">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleBackToHome}
-                className="gap-2"
+                className="gap-2 flex-shrink-0"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Back
+                <span className="hidden sm:inline">Back</span>
               </Button>
               <Separator orientation="vertical" className="h-4" />
-              <div className="flex items-center gap-2">
-                <Code2 className="h-4 w-4 text-primary" />
-                <span className="font-medium">Room {roomId}</span>
+              <div className="flex items-center gap-2 min-w-0">
+                <Code2 className="h-4 w-4 text-primary flex-shrink-0" />
+                <span className="font-medium truncate">Room {roomId}</span>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={copyRoomId}
-                  className="h-6 w-6 p-0"
+                  className="h-6 w-6 p-0 flex-shrink-0"
                 >
                   <Copy className="h-3 w-3" />
                 </Button>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              {/* Participants Strip */}
-              {participants.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <div className="flex -space-x-2">
-                    {participants.slice(0, 3).map((participant) => (
-                      <div
-                        key={participant.id}
-                        className="h-6 w-6 rounded-full bg-primary/10 border border-background flex items-center justify-center text-xs font-medium"
-                        title={participant.name}
-                      >
-                        {participant.name?.charAt(0).toUpperCase()}
-                      </div>
-                    ))}
-                    {participants.length > 3 && (
-                      <div className="h-6 w-6 rounded-full bg-muted border border-background flex items-center justify-center text-xs font-medium">
-                        +{participants.length - 3}
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {participants.length} user{participants.length !== 1 ? 's' : ''}
-                  </span>
-                </div>
+            <div className="flex items-center gap-2 overflow-x-auto">
+              {/* Mobile participants button */}
+              {isMobile && participants.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowParticipants(!showParticipants)}
+                  className="gap-2 flex-shrink-0"
+                >
+                  <Users className="h-4 w-4" />
+                  {participants.length}
+                </Button>
               )}
               
               <ConnectionStatus 
@@ -419,7 +396,7 @@ const EditorPage = () => {
                 size="sm" 
                 onClick={handleRunCode}
                 disabled={isRunning || !code.trim()}
-                className="gap-2"
+                className="gap-2 flex-shrink-0"
               >
                 <Play className="h-3 w-3" />
                 {isRunning ? 'Running...' : 'Run'}
@@ -427,150 +404,123 @@ const EditorPage = () => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => setIsTerminalCollapsed(!isTerminalCollapsed)}
-                className="gap-2"
+                onClick={() => setIsConsoleOpen(!isConsoleOpen)}
+                className="gap-2 flex-shrink-0"
               >
                 <Terminal className="h-4 w-4" />
-                {isTerminalCollapsed ? 'Show' : 'Hide'} Console
+                <span className="hidden sm:inline">{isConsoleOpen ? 'Hide' : 'Show'}</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={shareRoom} className="gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={shareRoom} 
+                className="gap-2 flex-shrink-0"
+              >
                 <Share className="h-4 w-4" />
-                Share
+                <span className="hidden sm:inline">Share</span>
               </Button>
             </div>
           </div>
         </header>
 
+        {/* Main Content */}
         <div className="flex-1 flex relative z-10 min-h-0">
-          <ResizablePanelGroup direction="horizontal" className="flex-1">
-            {/* Main Editor Area */}
-            <ResizablePanel defaultSize={participants.length > 0 ? 75 : 100} minSize={50}>
-              <ResizablePanelGroup direction="vertical" className="h-full">
-                {/* Editor Panel */}
-                <ResizablePanel defaultSize={isTerminalCollapsed ? 100 : 70} minSize={40}>
-                  <div className="h-full flex flex-col">
-                    {/* Language Selector Bar */}
-                    <div className="border-b border-border px-4 py-2 flex-shrink-0">
-                      <div className="flex items-center gap-4 overflow-x-auto">
-                        <select
-                          value={language}
-                          onChange={(e) => {
-                            const newLanguage = e.target.value;
-                            setLanguage(newLanguage);
-                            if (isEffectiveOwner) {
-                              sendLanguageChange(newLanguage);
-                            }
-                          }}
-                          disabled={!isEffectiveOwner && !ownershipLoading}
-                          className="px-3 py-1 text-sm bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-                        >
-                          <option value="javascript">JavaScript</option>
-                          <option value="typescript">TypeScript</option>
-                          <option value="python">Python</option>
-                          <option value="java">Java</option>
-                          <option value="cpp">C++</option>
-                          <option value="html">HTML</option>
-                          <option value="css">CSS</option>
-                          <option value="json">JSON</option>
-                        </select>
-                        {!isEffectiveOwner && !ownershipLoading && (
-                          <span className="text-xs text-muted-foreground hidden sm:inline whitespace-nowrap">
-                            Only room host can change language
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Code Editor */}
-                    <div className="flex-1 min-h-0">
-                      <CodeEditor
-                        value={code}
-                        language={language}
-                        roomId={roomId || ''}
-                        onChange={handleEditorChange}
-                        onCursorPositionChange={handleCursorPositionChange}
-                      />
-                    </div>
-                    
-                    {/* Status bar */}
-                    <div className="border-t border-border px-4 py-1 text-xs text-muted-foreground bg-muted/30 flex items-center justify-between flex-shrink-0">
-                      <div className="flex items-center gap-4">
-                        <span>Lines: {code.split('\n').length}</span>
-                        <span>Language: {language}</span>
-                        {isConnected && (
-                          <span className="text-accent">● Connected</span>
-                        )}
-                      </div>
-                      {!isConnected && (
-                        <span className="text-destructive text-xs">
-                          Disconnected - Changes may not sync
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </ResizablePanel>
-
-                {/* Console/Terminal Panel */}
-                {!isTerminalCollapsed && (
-                  <>
-                    <ResizableHandle withHandle className="h-1 bg-border hover:bg-primary/20 transition-colors" />
-                    <ResizablePanel defaultSize={30} minSize={15} maxSize={60}>
-                      <MultiTerminal
-                        isCollapsed={isTerminalCollapsed}
-                        onToggleCollapse={() => setIsTerminalCollapsed(!isTerminalCollapsed)}
-                        output={output}
-                        error={error}
-                        executionTime={executionTime}
-                        isRunning={isRunning}
-                        onRunCode={handleRunCode}
-                        canRun={!!code.trim()}
-                      />
-                    </ResizablePanel>
-                  </>
+          {/* Editor Area */}
+          <div className="flex-1 flex flex-col min-w-0">
+            {/* Language Selector Bar */}
+            <div className="border-b border-border px-4 py-2 flex-shrink-0">
+              <div className="flex items-center gap-4 overflow-x-auto">
+                <select
+                  value={language}
+                  onChange={(e) => {
+                    const newLanguage = e.target.value;
+                    setLanguage(newLanguage);
+                    if (isEffectiveOwner) {
+                      sendLanguageChange(newLanguage);
+                    }
+                  }}
+                  disabled={!isEffectiveOwner && !ownershipLoading}
+                  className="px-3 py-1 text-sm bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                >
+                  <option value="javascript">JavaScript</option>
+                  <option value="typescript">TypeScript</option>
+                  <option value="python">Python</option>
+                  <option value="java">Java</option>
+                  <option value="cpp">C++</option>
+                  <option value="c">C</option>
+                  <option value="csharp">C#</option>
+                  <option value="go">Go</option>
+                  <option value="rust">Rust</option>
+                  <option value="php">PHP</option>
+                  <option value="ruby">Ruby</option>
+                  <option value="swift">Swift</option>
+                  <option value="kotlin">Kotlin</option>
+                  <option value="scala">Scala</option>
+                  <option value="dart">Dart</option>
+                  <option value="r">R</option>
+                  <option value="sql">SQL</option>
+                  <option value="bash">Bash</option>
+                  <option value="powershell">PowerShell</option>
+                </select>
+                {!isEffectiveOwner && (
+                  <span className="text-xs text-muted-foreground">
+                    Only the host can change language
+                  </span>
                 )}
-              </ResizablePanelGroup>
-            </ResizablePanel>
+              </div>
+            </div>
 
-            {/* Participants Panel - Desktop Only */}
-            {participants.length > 0 && (
-              <>
-                <ResizableHandle withHandle className="w-1 bg-border hover:bg-primary/20 transition-colors hidden lg:flex" />
-                <ResizablePanel defaultSize={25} minSize={15} maxSize={40} className="hidden lg:block">
-                  <ParticipantsPanel
-                    participants={participants}
-                    isOwner={isEffectiveOwner}
-                    currentUserId={user?.id}
-                    onRemove={handleRemoveParticipant}
-                  />
-                </ResizablePanel>
-              </>
-            )}
-          </ResizablePanelGroup>
-          
-          {/* Mobile Participants Panel */}
-          <div className="lg:hidden">
-            <ParticipantsPanel
-              participants={participants}
-              isOwner={isEffectiveOwner}
-              currentUserId={user?.id}
-              onRemove={handleRemoveParticipant}
-            />
+            {/* Code Editor */}
+            <div className="flex-1 min-h-0">
+              <CodeEditor
+                value={code}
+                onChange={handleEditorChange}
+                onCursorPositionChange={handleCursorPositionChange}
+                language={language}
+                roomId={roomId || ''}
+              />
+            </div>
           </div>
+
+          {/* Desktop Participants Panel */}
+          {!isMobile && participants.length > 0 && (
+            <div className="w-80 border-l border-border flex-shrink-0">
+              <ParticipantsPanel
+                participants={participants}
+                isOwner={isEffectiveOwner}
+                currentUserId={user?.id}
+                onRemove={handleRemoveParticipant}
+              />
+            </div>
+          )}
         </div>
 
-        {/* Bottom Terminal Bar (when collapsed) */}
-        {isTerminalCollapsed && (
-          <MultiTerminal
-            isCollapsed={true}
-            onToggleCollapse={() => setIsTerminalCollapsed(false)}
-            output={output}
-            error={error}
-            executionTime={executionTime}
-            isRunning={isRunning}
-            onRunCode={handleRunCode}
-            canRun={!!code.trim()}
-          />
+        {/* Mobile Participants Panel */}
+        {isMobile && showParticipants && participants.length > 0 && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-sm max-h-[60vh]">
+              <ParticipantsPanel
+                participants={participants}
+                isOwner={isEffectiveOwner}
+                currentUserId={user?.id}
+                onRemove={handleRemoveParticipant}
+                onClose={() => setShowParticipants(false)}
+              />
+            </div>
+          </div>
         )}
+
+        {/* Console */}
+        <Console
+          isOpen={isConsoleOpen}
+          onClose={() => setIsConsoleOpen(false)}
+          output={output}
+          error={error}
+          executionTime={executionTime}
+          isRunning={isRunning}
+          onRunCode={handleRunCode}
+          canRun={!!code.trim() && !isRunning}
+        />
       </div>
     </SignedIn>
   );
