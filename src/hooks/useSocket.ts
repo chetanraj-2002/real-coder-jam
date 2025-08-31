@@ -46,7 +46,7 @@ export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave, onCur
         reconnectionAttempts: 5,
         reconnectionDelay: 2000,
         forceNew: true,
-        transports: ['websocket', 'polling'],
+        transports: ['websocket']
       });
       
       socketRef.current = socket;
