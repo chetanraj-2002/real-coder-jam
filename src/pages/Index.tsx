@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Code2, Users, Zap, Github } from "lucide-react";
+import { Code2, Users, Zap, Share } from "lucide-react";
 
 const Index = () => {
   const [roomId, setRoomId] = useState("");
@@ -33,20 +33,17 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="border-b border-border/50 backdrop-blur-sm bg-card/50">
-        <div className="container max-w-6xl mx-auto px-6 py-4">
+      <header className="border-b border-border px-6 py-4">
+        <div className="container max-w-4xl mx-auto">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-gradient-primary shadow-glow">
-                  <Code2 className="h-6 w-6 text-primary-foreground" />
-                </div>
+                <Code2 className="h-6 w-6 text-primary" />
                 <div>
-                <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                <h1 className="text-lg font-semibold">
                     Line Craft
                   </h1>
-                  <p className="text-sm text-muted-foreground">Real-time Code Collaboration</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -60,10 +57,6 @@ const Index = () => {
                 <SignedIn>
                   <UserButton afterSignOutUrl="/" />
                 </SignedIn>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Github className="h-4 w-4" />
-                  View Source
-                </Button>
               </div>
             </div>
         </div>
@@ -71,60 +64,41 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="container max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 text-primary text-sm font-medium mb-6">
-              <Zap className="h-4 w-4" />
-              Real-time Collaboration
-            </div>
-            <h2 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
-              Code Together,
-              <br />
-              Create Together
+        <div className="container max-w-md mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold mb-4">
+              Code Together
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Write code together in real-time. Create a room, share the link, and start collaborating instantly.
+            <p className="text-muted-foreground">
+              Real-time collaborative coding with instant sync
             </p>
           </div>
 
           {/* Room Management */}
-          <div className="max-w-md mx-auto">
+          <div>
             <SignedIn>
-              <Card className="border-2 border-primary/20 shadow-elevation bg-card/90 backdrop-blur-sm">
-                <CardHeader className="text-center pb-4">
-                  <CardTitle className="text-2xl">Join a Room</CardTitle>
-                  <CardDescription>
-                    Enter a room ID to join an existing session or create a new one
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="roomId" className="text-sm font-medium">
-                      Room ID
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="roomId"
-                        value={roomId}
-                        onChange={(e) => setRoomId(e.target.value.toUpperCase())}
-                        placeholder="Enter room ID"
-                        className="font-mono text-center tracking-wider"
-                        maxLength={6}
-                        onKeyDown={(e) => e.key === 'Enter' && joinRoom()}
-                      />
-                      <Button
-                        variant="outline"
-                        onClick={generateRoomId}
-                        className="shrink-0"
-                      >
-                        Generate
-                      </Button>
-                    </div>
+              <Card className="border border-border">
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      value={roomId}
+                      onChange={(e) => setRoomId(e.target.value.toUpperCase())}
+                      placeholder="Enter room ID"
+                      className="font-mono text-center"
+                      maxLength={6}
+                      onKeyDown={(e) => e.key === 'Enter' && joinRoom()}
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={generateRoomId}
+                    >
+                      Generate
+                    </Button>
                   </div>
 
                   <Button 
                     onClick={joinRoom}
-                    className="w-full h-12 text-base font-semibold bg-gradient-primary hover:shadow-glow transition-all duration-300"
+                    className="w-full"
                     disabled={!roomId.trim()}
                   >
                     Join Room
@@ -132,7 +106,7 @@ const Index = () => {
 
                   <div className="relative">
                     <Separator />
-                    <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-3 text-sm text-muted-foreground">
+                    <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-xs text-muted-foreground">
                       or
                     </span>
                   </div>
@@ -140,7 +114,7 @@ const Index = () => {
                   <Button
                     variant="outline"
                     onClick={handleCreateRoom}
-                    className="w-full h-12 text-base font-semibold border-accent/50 text-accent hover:bg-accent/10 hover:border-accent hover:shadow-accent-glow transition-all duration-300"
+                    className="w-full"
                   >
                     Create New Room
                   </Button>
@@ -149,71 +123,53 @@ const Index = () => {
             </SignedIn>
 
             <SignedOut>
-              <Card className="border-2 border-primary/20 shadow-elevation bg-card/90 backdrop-blur-sm">
-                <CardHeader className="text-center pb-4">
-                  <CardTitle className="text-2xl">Get Started</CardTitle>
-                  <CardDescription>
-                    Sign in to start collaborating with your team
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              <Card className="border border-border">
+                <CardContent className="p-6 space-y-4">
+                  <div className="text-center space-y-2">
+                    <h3 className="font-medium">Get Started</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Sign in to start collaborating
+                    </p>
+                  </div>
                   <SignInButton fallbackRedirectUrl="/" forceRedirectUrl="/">
-                    <Button className="w-full h-12 text-base font-semibold bg-gradient-primary hover:shadow-glow transition-all duration-300">
-                      Sign In to Continue
+                    <Button className="w-full">
+                      Sign In
                     </Button>
                   </SignInButton>
-                  <p className="text-center text-sm text-muted-foreground">
-                    New to Line Craft?{" "}
-                    <Button variant="link" className="p-0 h-auto text-primary" asChild>
-                      <SignInButton fallbackRedirectUrl="/" forceRedirectUrl="/" mode="modal">
-                        Create an account
-                      </SignInButton>
-                    </Button>
-                  </p>
                 </CardContent>
               </Card>
             </SignedOut>
           </div>
 
           {/* Features */}
-          <div className="grid md:grid-cols-3 gap-6 mt-16 max-w-4xl mx-auto">
-            <div className="text-center group">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 mb-4 group-hover:bg-primary/20 transition-colors">
-                <Code2 className="h-6 w-6 text-primary" />
+          <div className="mt-12 text-center">
+            <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Code2 className="h-4 w-4" />
+                <span>Monaco Editor</span>
               </div>
-              <h3 className="text-lg font-semibold mb-2">Monaco Editor</h3>
-              <p className="text-muted-foreground">
-                Professional code editing with syntax highlighting and IntelliSense
-              </p>
-            </div>
-            <div className="text-center group">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-accent/10 border border-accent/20 mb-4 group-hover:bg-accent/20 transition-colors">
-                <Users className="h-6 w-6 text-accent" />
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span>Real-time Sync</span>
               </div>
-              <h3 className="text-lg font-semibold mb-2">Live Collaboration</h3>
-              <p className="text-muted-foreground">
-                See cursors, selections, and changes from other developers in real-time
-              </p>
-            </div>
-            <div className="text-center group">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary-glow/10 border border-primary-glow/20 mb-4 group-hover:bg-primary-glow/20 transition-colors">
-                <Zap className="h-6 w-6 text-primary-glow" />
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4" />
+                <span>Code Execution</span>
               </div>
-              <h3 className="text-lg font-semibold mb-2">Instant Sync</h3>
-              <p className="text-muted-foreground">
-                Lightning-fast synchronization powered by WebSocket technology
-              </p>
+              <div className="flex items-center gap-2">
+                <Share className="h-4 w-4" />
+                <span>Easy Sharing</span>
+              </div>
             </div>
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-6">
-        <div className="container max-w-6xl mx-auto px-6">
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <footer className="border-t border-border py-4">
+        <div className="container max-w-4xl mx-auto px-6">
+          <div className="text-center text-xs text-muted-foreground">
             <p>Built with React, Monaco Editor & Socket.IO</p>
-            <p>© 2024 Line Craft. Real-time collaboration made simple.</p>
           </div>
         </div>
       </footer>
