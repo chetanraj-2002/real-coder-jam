@@ -13,6 +13,7 @@ import {
   ChevronUp
 } from "lucide-react";
 import { toast } from "sonner";
+import type { REPLResponse } from "@/workers/replWorker";
 
 interface ConsoleProps {
   isOpen: boolean;
@@ -36,13 +37,16 @@ export const Console = ({
   canRun 
 }: ConsoleProps) => {
   const [terminalHistory, setTerminalHistory] = useState<string[]>([
-    "Welcome to LineCraft Terminal",
+    "Welcome to LineCraft Terminal - JavaScript REPL",
     "Type 'help' for available commands"
   ]);
   const [terminalInput, setTerminalInput] = useState("");
+  const [commandHistory, setCommandHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   const [isExpanded, setIsExpanded] = useState(false);
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const workerRef = useRef<Worker | null>(null);
 
   const scrollToBottom = () => {
     terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -51,6 +55,52 @@ export const Console = ({
   useEffect(() => {
     scrollToBottom();
   }, [terminalHistory]);
+
+  // Initialize REPL worker
+  useEffect(() => {
+    try {
+      workerRef.current = new Worker(
+        new URL('../workers/replWorker.ts', import.meta.url),
+        { type: 'module' }
+      );
+
+      workerRef.current.onmessage = (event) => {
+        const response = event.data as REPLResponse;
+        
+        setTerminalHistory(prev => {
+          const newHistory = [...prev];
+          
+          switch (response.type) {
+            case 'log':
+              newHistory.push(response.text);
+              break;
+            case 'result':
+              newHistory.push(`=> ${response.text}`);
+              break;
+            case 'error':
+              newHistory.push(`Error: ${response.text}`);
+              break;
+            case 'reset-ok':
+              newHistory.push(response.text);
+              break;
+          }
+          
+          return newHistory;
+        });
+      };
+
+      workerRef.current.onerror = (error) => {
+        setTerminalHistory(prev => [...prev, `Worker Error: ${error.message}`]);
+      };
+
+    } catch (error) {
+      setTerminalHistory(prev => [...prev, "Failed to initialize JS REPL. Falling back to basic commands."]);
+    }
+
+    return () => {
+      workerRef.current?.terminate();
+    };
+  }, []);
 
   // Focus terminal input when terminal tab is active
   useEffect(() => {
@@ -64,66 +114,100 @@ export const Console = ({
   const handleTerminalCommand = (command: string) => {
     if (!command.trim()) return;
 
+    // Add to command history
+    setCommandHistory(prev => [...prev, command]);
+    setHistoryIndex(-1);
+
     const newHistory = [...terminalHistory, `$ ${command}`];
     
-    // Simple terminal commands
+    // Handle special commands
     switch (command.toLowerCase().trim()) {
       case 'help':
+        newHistory.push("LineCraft Terminal - JavaScript REPL");
         newHistory.push("Available commands:");
         newHistory.push("  help     - Show this help message");
         newHistory.push("  clear    - Clear terminal");
-        newHistory.push("  run      - Execute current code");
+        newHistory.push("  reset    - Reset JS context (clear variables)");
+        newHistory.push("  run      - Execute current code using Piston API");
         newHistory.push("  time     - Show current time");
-        newHistory.push("  whoami   - Show current user info");
-        newHistory.push("  pwd      - Show current working directory");
-        newHistory.push("  ls       - List files (simulated)");
+        newHistory.push("");
+        newHistory.push("JavaScript evaluation:");
+        newHistory.push("  Any other input will be evaluated as JavaScript");
+        newHistory.push("  Variables persist between evaluations");
+        newHistory.push("  Use arrow keys to navigate command history");
+        setTerminalHistory(newHistory);
         break;
+        
       case 'clear':
         setTerminalHistory([
-          "Welcome to LineCraft Terminal",
+          "Welcome to LineCraft Terminal - JavaScript REPL",
           "Type 'help' for available commands"
         ]);
-        setTerminalInput("");
-        return;
+        break;
+        
+      case 'reset':
+        if (workerRef.current) {
+          workerRef.current.postMessage({ type: 'reset' });
+          setTerminalHistory(newHistory);
+        } else {
+          newHistory.push("REPL worker not available");
+          setTerminalHistory(newHistory);
+        }
+        break;
+        
       case 'run':
         if (canRun) {
-          newHistory.push("Executing code...");
+          newHistory.push("Executing code via Piston API...");
+          setTerminalHistory(newHistory);
           onRunCode();
         } else {
           newHistory.push("Error: No code to execute or code is already running");
+          setTerminalHistory(newHistory);
         }
         break;
+        
       case 'time':
         newHistory.push(new Date().toLocaleString());
+        setTerminalHistory(newHistory);
         break;
-      case 'whoami':
-        newHistory.push("LineCraft User - Collaborative Code Editor");
-        break;
-      case 'pwd':
-        newHistory.push("/workspace/linecraft-editor");
-        break;
-      case 'ls':
-        newHistory.push("src/  public/  package.json  README.md  .gitignore");
-        break;
-      case 'exit':
-        newHistory.push("Use the close button to exit console");
-        break;
+        
       default:
-        if (command.startsWith('echo ')) {
-          newHistory.push(command.substring(5));
+        // Evaluate as JavaScript using the worker
+        if (workerRef.current) {
+          setTerminalHistory(newHistory);
+          workerRef.current.postMessage({ type: 'eval', code: command });
         } else {
-          newHistory.push(`bash: ${command}: command not found`);
+          newHistory.push("REPL worker not available - use basic commands only");
+          setTerminalHistory(newHistory);
         }
         break;
     }
 
-    setTerminalHistory(newHistory);
     setTerminalInput("");
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleTerminalCommand(terminalInput);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (commandHistory.length > 0) {
+        const newIndex = historyIndex === -1 ? commandHistory.length - 1 : Math.max(0, historyIndex - 1);
+        setHistoryIndex(newIndex);
+        setTerminalInput(commandHistory[newIndex]);
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (historyIndex >= 0) {
+        const newIndex = historyIndex + 1;
+        if (newIndex >= commandHistory.length) {
+          setHistoryIndex(-1);
+          setTerminalInput("");
+        } else {
+          setHistoryIndex(newIndex);
+          setTerminalInput(commandHistory[newIndex]);
+        }
+      }
     }
   };
 
@@ -252,7 +336,8 @@ export const Console = ({
                         key={index} 
                         className={`${
                           line.startsWith('$') ? 'text-accent' : 
-                          line.includes('Error') || line.includes('bash:') ? 'text-destructive' :
+                          line.startsWith('=>') ? 'text-primary' :
+                          line.includes('Error') ? 'text-destructive' :
                           'text-muted-foreground'
                         }`}
                       >
@@ -271,8 +356,8 @@ export const Console = ({
                     type="text"
                     value={terminalInput}
                     onChange={(e) => setTerminalInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Type a command..."
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type JavaScript or a command..."
                     className="flex-1 bg-transparent border-none outline-none text-xs font-mono text-foreground placeholder:text-muted-foreground"
                     autoComplete="off"
                   />
