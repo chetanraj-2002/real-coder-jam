@@ -1,32 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { SignedIn, SignedOut, useUser } from '@clerk/clerk-react';
+import { SignedIn, useUser } from '@clerk/clerk-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { CodeEditor } from "@/components/CodeEditor";
+import { useSocket } from "@/hooks/useSocket";
+import { useRoom } from "@/hooks/useRoom";
 import { 
   Code2, 
-  Users, 
   Copy, 
   Share, 
-  Settings, 
   ArrowLeft,
   Wifi,
   WifiOff,
-  Circle
+  Settings
 } from "lucide-react";
 import { toast } from "sonner";
-
-// Mock data for demonstration
-const mockUsers = [
-  { id: "1", name: "Alex Chen", avatar: "AC", color: "#3B82F6", isActive: true },
-  { id: "2", name: "Sarah Kim", avatar: "SK", color: "#10B981", isActive: true },
-  { id: "3", name: "Mike Johnson", avatar: "MJ", color: "#F59E0B", isActive: false },
-];
 
 const EditorPage = () => {
   const { roomId } = useParams();
@@ -39,38 +29,34 @@ const EditorPage = () => {
       navigate('/', { replace: true });
     }
   }, [user, navigate]);
-  const [code, setCode] = useState(`// Welcome to CodeShare - Room ${roomId}
-// Start coding together!
 
-function fibonacci(n) {
-  if (n <= 1) return n;
-  return fibonacci(n - 1) + fibonacci(n - 2);
-}
+  // Load room data from Supabase
+  const { code, setCode, language, setLanguage, loading } = useRoom(roomId || '');
 
-// Try editing this code with your team
-console.log("Fibonacci sequence:");
-for (let i = 0; i < 10; i++) {
-  console.log(fibonacci(i));
-}
+  // Socket.IO connection for real-time sync
+  const handleCodeChange = useCallback((newCode: string) => {
+    setCode(newCode);
+  }, [setCode]);
 
-// Real-time collaboration features:
-// ✨ Live cursors and selections
-// ⚡ Instant synchronization  
-// 👥 User presence indicators
-// 🎨 Syntax highlighting
-`);
-  
-  const [isConnected, setIsConnected] = useState(true);
-  const [connectedUsers] = useState(mockUsers);
-  const [language, setLanguage] = useState("javascript");
-
-  // Mock connection status simulation
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsConnected(prev => Math.random() > 0.1 ? true : prev);
-    }, 5000);
-    return () => clearInterval(interval);
+  const handleUserJoin = useCallback((userData: any) => {
+    toast.success(`${userData.name} joined the room`);
   }, []);
+
+  const handleUserLeave = useCallback((userId: string) => {
+    toast.info('Someone left the room');
+  }, []);
+
+  const { isConnected, sendCodeChange } = useSocket({
+    roomId: roomId || '',
+    onCodeChange: handleCodeChange,
+    onUserJoin: handleUserJoin,
+    onUserLeave: handleUserLeave,
+  });
+
+  const handleEditorChange = (value: string) => {
+    setCode(value);
+    sendCodeChange(value);
+  };
 
   const copyRoomId = () => {
     if (roomId) {
@@ -87,8 +73,6 @@ for (let i = 0; i < 10; i++) {
     }
   };
 
-  const activeUsers = connectedUsers.filter(user => user.isActive);
-  const totalUsers = connectedUsers.length;
 
   return (
     <SignedIn>
@@ -137,8 +121,8 @@ for (let i = 0; i < 10; i++) {
                       </>
                     )}
                   </div>
-                  <span>•</span>
-                  <span>{activeUsers.length} active</span>
+                   <span>•</span>
+                   <span>Real-time sync</span>
                 </div>
               </div>
             </div>
@@ -157,107 +141,48 @@ for (let i = 0; i < 10; i++) {
       </header>
 
       <div className="flex-1 flex">
-        {/* Sidebar - Users Panel */}
-        <aside className="w-80 border-r border-border/50 bg-card/30 backdrop-blur-sm">
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                <span className="font-semibold">Participants</span>
-              </div>
-              <Badge variant="secondary" className="text-xs">
-                {totalUsers}
-              </Badge>
-            </div>
-
-            <ScrollArea className="h-[200px]">
-              <div className="space-y-2">
-                {connectedUsers.map((user) => (
-                  <div
-                    key={user.id}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+        {/* Main Editor */}
+        <main className="flex-1 flex flex-col">
+          {/* Language Selector Bar */}
+          <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm px-6 py-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium">Language:</label>
+                  <select
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                    className="px-3 py-1 text-sm bg-background border border-border rounded focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    <div className="relative">
-                      <Avatar 
-                        className="h-8 w-8 border-2" 
-                        style={{ borderColor: user.color }}
-                      >
-                        <AvatarFallback 
-                          className="text-xs font-semibold text-white"
-                          style={{ backgroundColor: user.color }}
-                        >
-                          {user.avatar}
-                        </AvatarFallback>
-                      </Avatar>
-                      <Circle 
-                        className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 ${
-                          user.isActive ? 'text-accent fill-accent' : 'text-muted fill-muted'
-                        }`}
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{user.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {user.isActive ? 'Active' : 'Away'}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                    <option value="javascript">JavaScript</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="python">Python</option>
+                    <option value="java">Java</option>
+                    <option value="cpp">C++</option>
+                    <option value="html">HTML</option>
+                    <option value="css">CSS</option>
+                    <option value="json">JSON</option>
+                  </select>
+                </div>
               </div>
-            </ScrollArea>
-
-            <Separator className="my-4" />
-
-            {/* Language Selector */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Language</label>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="javascript">JavaScript</option>
-                <option value="typescript">TypeScript</option>
-                <option value="python">Python</option>
-                <option value="java">Java</option>
-                <option value="cpp">C++</option>
-                <option value="html">HTML</option>
-                <option value="css">CSS</option>
-                <option value="json">JSON</option>
-              </select>
-            </div>
-
-            {/* Mock Activity Feed */}
-            <div className="mt-6">
-              <h3 className="text-sm font-medium mb-3">Recent Activity</h3>
-              <div className="space-y-2 text-xs text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Circle className="h-2 w-2 text-accent fill-accent" />
-                  <span>Alex joined the room</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Circle className="h-2 w-2 text-primary fill-primary" />
-                  <span>Sarah edited line 15</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Circle className="h-2 w-2 text-muted fill-muted" />
-                  <span>Mike went away</span>
-                </div>
+              <div className="text-xs text-muted-foreground">
+                {isConnected ? '● Live sync enabled' : '○ Reconnecting...'}
               </div>
             </div>
           </div>
-        </aside>
-
-        {/* Main Editor */}
-        <main className="flex-1 flex flex-col">
           <div className="flex-1 relative">
-            <CodeEditor
-              value={code}
-              onChange={setCode}
-              language={language}
-              roomId={roomId || ""}
-              users={activeUsers}
-            />
+            {loading ? (
+              <div className="h-full flex items-center justify-center bg-editor-background">
+                <div className="text-muted-foreground">Loading room...</div>
+              </div>
+            ) : (
+              <CodeEditor
+                value={code}
+                onChange={handleEditorChange}
+                language={language}
+                roomId={roomId || ""}
+              />
+            )}
             
             {/* Connection Status Overlay */}
             {!isConnected && (
@@ -276,16 +201,24 @@ for (let i = 0; i < 10; i++) {
           <footer className="border-t border-border/50 bg-card/30 backdrop-blur-sm px-6 py-2">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <div className="flex items-center gap-4">
-                <span>Line 1, Column 1</span>
-                <span>UTF-8</span>
+                <span>{code.split('\n').length} lines</span>
+                <span>{code.length} characters</span>
                 <span>{language.toUpperCase()}</span>
               </div>
               <div className="flex items-center gap-4">
-                <span>{code.split('\n').length} lines</span>
-                <span>{code.length} characters</span>
+                <span>UTF-8</span>
                 <div className="flex items-center gap-1">
-                  <Circle className="h-2 w-2 text-accent fill-accent" />
-                  <span>Auto-sync enabled</span>
+                  {isConnected ? (
+                    <>
+                      <div className="h-2 w-2 bg-accent rounded-full animate-pulse" />
+                      <span>Live sync</span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="h-2 w-2 bg-destructive rounded-full" />
+                      <span>Offline</span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

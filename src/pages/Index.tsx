@@ -43,10 +43,10 @@ const Index = () => {
                   <Code2 className="h-6 w-6 text-primary-foreground" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                    CodeShare
+                <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                    Line Craft
                   </h1>
-                  <p className="text-sm text-muted-foreground">Realtime Collaborative Editor</p>
+                  <p className="text-sm text-muted-foreground">Real-time Code Collaboration</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -83,8 +83,7 @@ const Index = () => {
               Create Together
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Experience seamless real-time collaboration with our powerful code editor. 
-              Share ideas, debug together, and build amazing projects as a team.
+              Write code together in real-time. Create a room, share the link, and start collaborating instantly.
             </p>
           </div>
 
@@ -164,7 +163,7 @@ const Index = () => {
                     </Button>
                   </SignInButton>
                   <p className="text-center text-sm text-muted-foreground">
-                    New to CodeShare?{" "}
+                    New to Line Craft?{" "}
                     <Button variant="link" className="p-0 h-auto text-primary" asChild>
                       <SignInButton fallbackRedirectUrl="/" forceRedirectUrl="/" mode="modal">
                         Create an account
@@ -213,8 +212,8 @@ const Index = () => {
       <footer className="border-t border-border/50 py-6">
         <div className="container max-w-6xl mx-auto px-6">
           <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <p>Built with React, Monaco Editor & WebSockets</p>
-            <p>© 2024 CodeShare. Open source project.</p>
+            <p>Built with React, Monaco Editor & Socket.IO</p>
+            <p>© 2024 Line Craft. Real-time collaboration made simple.</p>
           </div>
         </div>
       </footer>

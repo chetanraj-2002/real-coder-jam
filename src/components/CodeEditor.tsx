@@ -2,25 +2,15 @@ import { useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
 import type { Monaco } from "@monaco-editor/react";
 
-interface User {
-  id: string;
-  name: string;
-  avatar: string;
-  color: string;
-  isActive: boolean;
-}
-
 interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;
   language: string;
   roomId: string;
-  users: User[];
 }
 
-export const CodeEditor = ({ value, onChange, language, roomId, users }: CodeEditorProps) => {
+export const CodeEditor = ({ value, onChange, language, roomId }: CodeEditorProps) => {
   const editorRef = useRef<any>(null);
-  const decorationsRef = useRef<string[]>([]);
 
   const handleEditorDidMount = (editor: any) => {
     editorRef.current = editor;
@@ -44,55 +34,7 @@ export const CodeEditor = ({ value, onChange, language, roomId, users }: CodeEdi
       cursorSmoothCaretAnimation: 'on',
       smoothScrolling: true,
     });
-
-    // Mock collaborative cursors and selections
-    simulateCollaborativeCursors();
   };
-
-  const simulateCollaborativeCursors = () => {
-    if (!editorRef.current) return;
-
-    // Simulate other users' cursors and selections
-    const mockDecorations = users.slice(0, 2).map((user, index) => {
-      const randomLine = Math.floor(Math.random() * 10) + 5;
-      const randomColumn = Math.floor(Math.random() * 20) + 1;
-      
-      return {
-        range: {
-          startLineNumber: randomLine,
-          startColumn: randomColumn,
-          endLineNumber: randomLine,
-          endColumn: randomColumn + 5,
-        },
-        options: {
-          className: `collaborative-selection`,
-          hoverMessage: { value: `${user.name} is editing here` },
-          stickiness: 1,
-          beforeContentClassName: 'collaborative-cursor',
-        }
-      };
-    });
-
-    // Add collaborative decorations with custom styles
-    if (mockDecorations.length > 0) {
-      const newDecorations = editorRef.current.deltaDecorations(
-        decorationsRef.current,
-        mockDecorations
-      );
-      decorationsRef.current = newDecorations;
-    }
-  };
-
-  // Simulate real-time updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (Math.random() > 0.7) {
-        simulateCollaborativeCursors();
-      }
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [users]);
 
   const handleEditorChange = (value: string | undefined) => {
     if (value !== undefined) {
@@ -155,27 +97,8 @@ export const CodeEditor = ({ value, onChange, language, roomId, users }: CodeEdi
         }}
       />
 
-      {/* Custom CSS for collaborative features */}
+      {/* Custom CSS for Monaco Editor */}
       <style>{`
-        .collaborative-selection {
-          background-color: rgba(16, 185, 129, 0.2) !important;
-          border-left: 2px solid #10B981;
-        }
-        
-        .collaborative-cursor::before {
-          content: '';
-          position: absolute;
-          width: 2px;
-          height: 20px;
-          background-color: #10B981;
-          box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
-          animation: cursor-blink 1s infinite;
-        }
-        
-        @keyframes cursor-blink {
-          0%, 50% { opacity: 1; }
-          51%, 100% { opacity: 0.3; }
-        }
 
         /* Monaco Editor Dark Theme Customization */
         .monaco-editor .margin {
