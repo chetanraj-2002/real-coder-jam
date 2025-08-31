@@ -36,7 +36,7 @@ const Index = () => {
     <div className="min-h-screen bg-background flex flex-col relative">
       {/* Background Image */}
       <div 
-        className="absolute inset-0 opacity-5 bg-cover bg-center bg-no-repeat"
+        className="absolute inset-0 opacity-10 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(/src/assets/hero-background.jpg)` }}
       />
       {/* Header */}

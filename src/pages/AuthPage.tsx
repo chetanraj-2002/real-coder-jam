@@ -20,9 +20,9 @@ const AuthPage = () => {
             <CardHeader className="text-center">
               <div className="flex items-center justify-center gap-2 mb-4">
                 <Code className="h-8 w-8 text-primary" />
-                <h1 className="text-2xl font-bold">CodeSync</h1>
+                <h1 className="text-2xl font-bold">LineCraft</h1>
               </div>
-              <CardTitle>Welcome to CodeSync</CardTitle>
+              <CardTitle>Welcome to LineCraft</CardTitle>
               <CardDescription>
                 Join the collaborative coding experience. Sign in or create an account to get started.
               </CardDescription>
@@ -42,7 +42,7 @@ const AuthPage = () => {
               </div>
               
               <div className="pt-6 border-t">
-                <h3 className="font-semibold mb-3 text-center">Why CodeSync?</h3>
+                <h3 className="font-semibold mb-3 text-center">Why LineCraft?</h3>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <Users className="h-5 w-5 text-primary" />

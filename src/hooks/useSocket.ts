@@ -10,40 +10,51 @@ interface UseSocketProps {
 
 export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave }: UseSocketProps) => {
   const [isConnected, setIsConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
     console.log('useSocket: Setting up socket connection for room:', roomId);
     
     try {
-      // Replace with your Socket.IO server URL
+      // LineCraft Socket.IO server URL
       const socket = io(process.env.NODE_ENV === 'production' 
-        ? 'wss://your-socket-server.com' 
+        ? 'wss://linecraft-server-production.up.railway.app' 
         : 'ws://localhost:3001', {
         // Add connection options to handle failures gracefully
-        timeout: 5000,
+        timeout: 10000,
         autoConnect: true,
         reconnection: true,
-        reconnectionAttempts: 3,
-        reconnectionDelay: 1000,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 2000,
+        forceNew: true,
+        transports: ['websocket', 'polling'],
       });
       
       socketRef.current = socket;
 
       socket.on('connect', () => {
-        console.log('useSocket: Connected to server');
+        console.log('useSocket: Connected to LineCraft server');
         setIsConnected(true);
+        setConnectionStatus('connected');
         socket.emit('join-room', roomId);
       });
 
       socket.on('disconnect', () => {
-        console.log('useSocket: Disconnected from server');
+        console.log('useSocket: Disconnected from LineCraft server');
         setIsConnected(false);
+        setConnectionStatus('disconnected');
       });
 
       socket.on('connect_error', (error) => {
         console.log('useSocket: Connection error:', error.message);
         setIsConnected(false);
+        setConnectionStatus('error');
+      });
+
+      socket.on('reconnecting', () => {
+        console.log('useSocket: Reconnecting to LineCraft server...');
+        setConnectionStatus('connecting');
       });
 
       socket.on('code-change', onCodeChange);
@@ -72,6 +83,7 @@ export const useSocket = ({ roomId, onCodeChange, onUserJoin, onUserLeave }: Use
 
   return {
     isConnected,
+    connectionStatus,
     sendCodeChange,
   };
 };

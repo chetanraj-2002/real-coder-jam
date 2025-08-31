@@ -55,7 +55,7 @@ const EditorPage = () => {
     // Removed toast for cleaner UX
   }, []);
 
-  const { isConnected, sendCodeChange } = useSocket({
+  const { isConnected, connectionStatus, sendCodeChange } = useSocket({
     roomId: roomId || '',
     onCodeChange: handleCodeChange,
     onUserJoin: handleUserJoin,
@@ -137,9 +137,24 @@ const EditorPage = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-accent animate-pulse' : 'bg-destructive'}`} />
-              <span>{isConnected ? 'Live' : 'Offline'}</span>
+            <div className="flex items-center gap-2 text-xs">
+              <div className={`h-2 w-2 rounded-full ${
+                connectionStatus === 'connected' ? 'bg-accent animate-pulse' :
+                connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' :
+                connectionStatus === 'error' ? 'bg-destructive' :
+                'bg-muted-foreground'
+              }`} />
+              <span className={
+                connectionStatus === 'connected' ? 'text-accent' :
+                connectionStatus === 'connecting' ? 'text-yellow-500' :
+                connectionStatus === 'error' ? 'text-destructive' :
+                'text-muted-foreground'
+              }>
+                {connectionStatus === 'connected' ? 'Live' :
+                 connectionStatus === 'connecting' ? 'Connecting...' :
+                 connectionStatus === 'error' ? 'Error' :
+                 'Offline'}
+              </span>
             </div>
             <Button 
               variant="default" 
