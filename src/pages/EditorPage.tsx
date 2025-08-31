@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { CodeEditor } from "@/components/CodeEditor";
 import { useSocket } from "@/hooks/useSocket";
 import { useRoom } from "@/hooks/useRoom";
+import { useRoomOwnership } from "@/hooks/useRoomOwnership";
 import { runCode, type RunCodeResult } from "@/lib/runCode";
 import { 
   Code2, 
@@ -37,6 +38,9 @@ const EditorPage = () => {
 
   // Load room data from Supabase
   const { code, setCode, language, setLanguage, loading } = useRoom(roomId || '');
+  
+  // Check room ownership
+  const { isOwner, loading: ownershipLoading } = useRoomOwnership(roomId || '');
 
   // Socket.IO connection for real-time sync
   const handleCodeChange = useCallback((newCode: string) => {
@@ -164,7 +168,8 @@ const EditorPage = () => {
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="px-3 py-1 text-sm bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary"
+                disabled={!isOwner && !ownershipLoading}
+                className="px-3 py-1 text-sm bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <option value="javascript">JavaScript</option>
                 <option value="typescript">TypeScript</option>
@@ -175,6 +180,11 @@ const EditorPage = () => {
                 <option value="css">CSS</option>
                 <option value="json">JSON</option>
               </select>
+              {!isOwner && !ownershipLoading && (
+                <span className="text-xs text-muted-foreground">
+                  Only room owner can change language
+                </span>
+              )}
             </div>
           </div>
           <div className="flex-1 flex">

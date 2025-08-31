@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useUser } from '@clerk/clerk-react';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useRoom = (roomId: string) => {
+  const { user } = useUser();
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('javascript');
   const [loading, setLoading] = useState(true);
@@ -24,7 +26,9 @@ export const useRoom = (roomId: string) => {
             .from('rooms')
             .insert([{ 
               id: roomId,
-              code_content: `// Welcome to Line Craft - Room ${roomId}
+              owner_id: user?.id,
+              owner_email: user?.primaryEmailAddress?.emailAddress,
+              code_content: `// Welcome to LineCraft - Room ${roomId}
 // Start coding together!
 
 function fibonacci(n) {

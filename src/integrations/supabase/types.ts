@@ -104,6 +104,7 @@ export type Database = {
           is_active: boolean | null
           language: string | null
           max_participants: number | null
+          owner_email: string | null
           owner_id: string | null
           updated_at: string
         }
@@ -114,6 +115,7 @@ export type Database = {
           is_active?: boolean | null
           language?: string | null
           max_participants?: number | null
+          owner_email?: string | null
           owner_id?: string | null
           updated_at?: string
         }
@@ -124,6 +126,7 @@ export type Database = {
           is_active?: boolean | null
           language?: string | null
           max_participants?: number | null
+          owner_email?: string | null
           owner_id?: string | null
           updated_at?: string
         }

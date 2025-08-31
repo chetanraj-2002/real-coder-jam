@@ -61,18 +61,23 @@ export const runCode = async (code: string, language: string): Promise<RunCodeRe
 
     const result = await response.json();
     
+    // Categorize errors as syntactical or logical
     if (result.run && result.run.code !== 0 && result.run.stderr) {
+      const errorMessage = result.run.stderr;
+      const errorType = categorizeError(errorMessage, language);
       return {
         output: result.run.stdout || "",
-        error: result.run.stderr,
+        error: `${errorType}: ${errorMessage}`,
         executionTime: result.run.time || 0
       };
     }
 
     if (result.compile && result.compile.code !== 0 && result.compile.stderr) {
+      const errorMessage = result.compile.stderr;
+      const errorType = categorizeError(errorMessage, language);
       return {
         output: result.compile.stdout || "",
-        error: result.compile.stderr,
+        error: `${errorType}: ${errorMessage}`,
         executionTime: 0
       };
     }
@@ -90,6 +95,80 @@ export const runCode = async (code: string, language: string): Promise<RunCodeRe
     };
   }
 };
+
+function categorizeError(errorMessage: string, language: string): string {
+  const syntaxPatterns: Record<string, RegExp[]> = {
+    javascript: [
+      /SyntaxError/i,
+      /Unexpected token/i,
+      /missing/i,
+      /expected/i,
+      /unterminated/i
+    ],
+    typescript: [
+      /SyntaxError/i,
+      /Unexpected token/i,
+      /missing/i,
+      /expected/i,
+      /unterminated/i
+    ],
+    python: [
+      /SyntaxError/i,
+      /IndentationError/i,
+      /TabError/i,
+      /invalid syntax/i,
+      /unexpected EOF/i
+    ],
+    java: [
+      /error: /i,
+      /expected/i,
+      /illegal/i,
+      /cannot find symbol/i,
+      /class .* is public, should be declared/i
+    ],
+    cpp: [
+      /error: /i,
+      /expected/i,
+      /missing/i,
+      /invalid/i,
+      /undeclared/i
+    ]
+  };
+
+  const logicalPatterns = [
+    /ReferenceError/i,
+    /TypeError/i,
+    /RangeError/i,
+    /NameError/i,
+    /AttributeError/i,
+    /IndexError/i,
+    /KeyError/i,
+    /ValueError/i,
+    /ZeroDivisionError/i,
+    /NullPointerException/i,
+    /ArrayIndexOutOfBoundsException/i,
+    /segmentation fault/i,
+    /runtime error/i
+  ];
+
+  // Check for syntax errors first
+  const langPatterns = syntaxPatterns[language] || [];
+  for (const pattern of langPatterns) {
+    if (pattern.test(errorMessage)) {
+      return "Syntax Error";
+    }
+  }
+
+  // Check for logical/runtime errors
+  for (const pattern of logicalPatterns) {
+    if (pattern.test(errorMessage)) {
+      return "Runtime Error";
+    }
+  }
+
+  // Default to compilation error if unclear
+  return "Compilation Error";
+}
 
 function getFileExtension(language: string): string {
   const extensions: Record<string, string> = {

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Code2, Users, Zap, Share } from "lucide-react";
+import { Code2, Users, Zap, Share, Plus } from "lucide-react";
 
 const Index = () => {
   const [roomId, setRoomId] = useState("");
@@ -33,7 +33,12 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col relative">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 opacity-5 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(/src/assets/hero-background.jpg)` }}
+      />
       {/* Header */}
       <header className="border-b border-border px-6 py-4">
         <div className="container max-w-4xl mx-auto">
@@ -42,7 +47,7 @@ const Index = () => {
                 <Code2 className="h-6 w-6 text-primary" />
                 <div>
                 <h1 className="text-lg font-semibold">
-                    Line Craft
+                    LineCraft
                   </h1>
                 </div>
               </div>
@@ -55,6 +60,14 @@ const Index = () => {
                   </SignInButton>
                 </SignedOut>
                 <SignedIn>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate("/dashboard")}
+                    className="gap-2"
+                  >
+                    Dashboard
+                  </Button>
                   <UserButton afterSignOutUrl="/" />
                 </SignedIn>
               </div>
@@ -63,14 +76,14 @@ const Index = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center px-6 py-12">
+      <main className="flex-1 flex items-center justify-center px-6 py-12 relative z-10">
         <div className="container max-w-md mx-auto">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold mb-4">
-              Code Together
+              Code Together, Create Together
             </h2>
             <p className="text-muted-foreground">
-              Real-time collaborative coding with instant sync
+              Real-time collaborative coding with instant sync and execution
             </p>
           </div>
 
@@ -83,21 +96,16 @@ const Index = () => {
                     <Input
                       value={roomId}
                       onChange={(e) => setRoomId(e.target.value.toUpperCase())}
-                      placeholder="Enter room ID"
+                      placeholder="Enter room ID to join"
                       className="font-mono text-center"
                       maxLength={6}
                       onKeyDown={(e) => e.key === 'Enter' && joinRoom()}
                     />
-                    <Button
-                      variant="outline"
-                      onClick={generateRoomId}
-                    >
-                      Generate
-                    </Button>
                   </div>
 
                   <Button 
                     onClick={joinRoom}
+                    variant="outline"
                     className="w-full"
                     disabled={!roomId.trim()}
                   >
@@ -112,10 +120,10 @@ const Index = () => {
                   </div>
 
                   <Button
-                    variant="outline"
                     onClick={handleCreateRoom}
-                    className="w-full"
+                    className="w-full gap-2"
                   >
+                    <Plus className="h-4 w-4" />
                     Create New Room
                   </Button>
                 </CardContent>
