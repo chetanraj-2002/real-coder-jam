@@ -21,6 +21,7 @@ import {
   Play,
   Terminal
 } from "lucide-react";
+import { Console } from "@/components/Console";
 import { toast } from "sonner";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import codingBackground from "@/assets/coding-background.jpg";
@@ -31,7 +32,9 @@ const EditorPage = () => {
   const { user } = useUser();
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState<string>("");
-  const [showOutput, setShowOutput] = useState(false);
+  const [error, setError] = useState<string>("");
+  const [executionTime, setExecutionTime] = useState<number>();
+  const [showConsole, setShowConsole] = useState(false);
   const [participants, setParticipants] = useState<any[]>([]);
   const [cursorPositions, setCursorPositions] = useState<Map<string, { line: number; column: number }>>(new Map());
   const [collaborationMethod, setCollaborationMethod] = useState<'socket' | 'supabase' | null>(null);
@@ -294,20 +297,29 @@ const EditorPage = () => {
 
   const handleRunCode = async () => {
     setIsRunning(true);
-    setShowOutput(true);
+    setShowConsole(true);
+    setError("");
+    setOutput("");
+    setExecutionTime(undefined);
     
     try {
       const result = await runCode(code, language);
       
       if (result.error) {
-        setOutput(`Error: ${result.error}`);
+        setError(result.error);
+        setOutput("");
         toast.error("Code execution failed");
       } else {
         setOutput(result.output || "Code executed successfully");
+        setError("");
         toast.success("Code executed successfully");
       }
+      
+      setExecutionTime(result.executionTime);
     } catch (error) {
-      setOutput(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setError(`Execution failed: ${errorMessage}`);
+      setOutput("");
       toast.error("Failed to execute code");
     } finally {
       setIsRunning(false);
@@ -391,6 +403,15 @@ const EditorPage = () => {
               <Play className="h-3 w-3" />
               {isRunning ? 'Running...' : 'Run'}
             </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowConsole(true)}
+              className="gap-2"
+            >
+              <Terminal className="h-4 w-4" />
+              Console
+            </Button>
             <Button variant="outline" size="sm" onClick={shareRoom} className="gap-2">
               <Share className="h-4 w-4" />
               Share
@@ -401,41 +422,42 @@ const EditorPage = () => {
 
       <div className="flex-1 flex relative z-10">
         {/* Main Editor */}
-        <main className="flex-1 flex flex-col">
+        <main className="flex-1 flex flex-col overflow-hidden">
           {/* Language Selector Bar */}
-          <div className="border-b border-border px-4 py-2">
-            <div className="flex items-center gap-4">
-              <select
-                value={language}
-                onChange={(e) => {
-                  const newLanguage = e.target.value;
-                  setLanguage(newLanguage);
-                  if (isEffectiveOwner) {
-                    sendLanguageChange(newLanguage);
-                  }
-                }}
-                disabled={!isEffectiveOwner && !ownershipLoading}
-                className="px-3 py-1 text-sm bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option value="javascript">JavaScript</option>
-                <option value="typescript">TypeScript</option>
-                <option value="python">Python</option>
-                <option value="java">Java</option>
-                <option value="cpp">C++</option>
-                <option value="html">HTML</option>
-                <option value="css">CSS</option>
-                <option value="json">JSON</option>
-              </select>
-              {!isEffectiveOwner && !ownershipLoading && (
-                <span className="text-xs text-muted-foreground">
-                  Only room host can change language
-                </span>
-              )}
+          <div className="border-b border-border px-4 py-2 flex-shrink-0">
+          <div className="flex items-center gap-4 overflow-x-auto">
+            <select
+              value={language}
+              onChange={(e) => {
+                const newLanguage = e.target.value;
+                setLanguage(newLanguage);
+                if (isEffectiveOwner) {
+                  sendLanguageChange(newLanguage);
+                }
+              }}
+              disabled={!isEffectiveOwner && !ownershipLoading}
+              className="px-3 py-1 text-sm bg-background border border-border rounded focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+            >
+              <option value="javascript">JavaScript</option>
+              <option value="typescript">TypeScript</option>
+              <option value="python">Python</option>
+              <option value="java">Java</option>
+              <option value="cpp">C++</option>
+              <option value="html">HTML</option>
+              <option value="css">CSS</option>
+              <option value="json">JSON</option>
+            </select>
+            {!isEffectiveOwner && !ownershipLoading && (
+              <span className="text-xs text-muted-foreground hidden sm:inline whitespace-nowrap">
+                Only room host can change language
+              </span>
+            )}
             </div>
           </div>
-          <div className="flex-1 flex">
-            {/* Code Editor */}
-            <div className="flex-1 relative">
+          
+          {/* Code Editor - Full Width on Mobile */}
+          <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 relative min-w-0">
               {loading ? (
                 <div className="h-full flex items-center justify-center bg-editor-background">
                   <div className="text-muted-foreground">Loading room...</div>
@@ -450,57 +472,60 @@ const EditorPage = () => {
                 />
               )}
             </div>
-
-            {/* Participants Panel - Visible to all */}
-            <ParticipantsPanel
-              participants={participants.map(p => ({
-                ...p,
-                cursor: cursorPositions.get(p.id),
-                isOwner: p.id === (effectiveOwner || (isOwner ? user?.id : null))
-              }))}
-              isOwner={isEffectiveOwner}
-              currentUserId={user?.id}
-              onRemove={handleRemoveParticipant}
-            />
-
-            {/* Output Panel */}
-            {showOutput && (
-              <div className="w-80 border-l border-border flex flex-col bg-card">
-                <div className="border-b border-border px-4 py-2 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Terminal className="h-4 w-4" />
-                    <span className="font-medium">Output</span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowOutput(false)}
-                    className="h-6 w-6 p-0"
-                  >
-                    ×
-                  </Button>
-                </div>
-                <div className="flex-1 p-4 font-mono text-sm overflow-auto">
-                  <pre className="whitespace-pre-wrap">{output}</pre>
-                </div>
-              </div>
-            )}
           </div>
-
-          {/* Status Bar */}
-          <footer className="border-t border-border px-4 py-2">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <div className="flex items-center gap-4">
-                <span>{code.split('\n').length} lines</span>
-                <span>{code.length} chars</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span>{language.toUpperCase()}</span>
-              </div>
-            </div>
-          </footer>
         </main>
+
+        {/* Floating Participants Panel */}
+        <ParticipantsPanel
+          participants={participants.map(p => ({
+            ...p,
+            cursor: cursorPositions.get(p.id),
+            isOwner: p.id === (effectiveOwner || (isOwner ? user?.id : null))
+          }))}
+          isOwner={isEffectiveOwner}
+          currentUserId={user?.id}
+          onRemove={handleRemoveParticipant}
+        />
+
+        {/* Floating Console with Open Button */}
+        {!showConsole ? (
+          <div className="fixed right-4 bottom-4 z-50">
+            <Button
+              variant="default"
+              size="icon"
+              onClick={() => setShowConsole(true)}
+              className="shadow-lg hover:shadow-xl transition-all duration-200"
+              title="Open Console"
+            >
+              <Terminal className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <Console
+            isOpen={showConsole}
+            onClose={() => setShowConsole(false)}
+            output={output}
+            error={error}
+            executionTime={executionTime}
+            isRunning={isRunning}
+            onRunCode={handleRunCode}
+            canRun={!!code.trim() && !isRunning}
+          />
+        )}
       </div>
+
+      {/* Status Bar */}
+      <footer className="border-t border-border px-4 py-2 relative z-10">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center gap-4">
+            <span>{code.split('\n').length} lines</span>
+            <span>{code.length} chars</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span>{language.toUpperCase()}</span>
+          </div>
+        </div>
+      </footer>
     </div>
     </SignedIn>
   );
