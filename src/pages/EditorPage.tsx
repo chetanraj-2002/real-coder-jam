@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { SignedIn, SignedOut, useUser } from '@clerk/clerk-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,14 @@ const mockUsers = [
 const EditorPage = () => {
   const { roomId } = useParams();
   const navigate = useNavigate();
+  const { user } = useUser();
+  
+  // Redirect to home if not authenticated
+  useEffect(() => {
+    if (!user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
   const [code, setCode] = useState(`// Welcome to CodeShare - Room ${roomId}
 // Start coding together!
 
@@ -82,7 +91,8 @@ for (let i = 0; i < 10; i++) {
   const totalUsers = connectedUsers.length;
 
   return (
-    <div className="min-h-screen bg-gradient-background flex flex-col">
+    <SignedIn>
+      <div className="min-h-screen bg-gradient-background flex flex-col">
       {/* Header */}
       <header className="border-b border-border/50 backdrop-blur-sm bg-card/50">
         <div className="flex items-center justify-between px-6 py-3">
@@ -283,6 +293,7 @@ for (let i = 0; i < 10; i++) {
         </main>
       </div>
     </div>
+    </SignedIn>
   );
 };
 

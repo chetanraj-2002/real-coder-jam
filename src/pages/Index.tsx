@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,23 +37,35 @@ const Index = () => {
       {/* Header */}
       <header className="border-b border-border/50 backdrop-blur-sm bg-card/50">
         <div className="container max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-primary shadow-glow">
-                <Code2 className="h-6 w-6 text-primary-foreground" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-gradient-primary shadow-glow">
+                  <Code2 className="h-6 w-6 text-primary-foreground" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                    CodeShare
+                  </h1>
+                  <p className="text-sm text-muted-foreground">Realtime Collaborative Editor</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                  CodeShare
-                </h1>
-                <p className="text-sm text-muted-foreground">Realtime Collaborative Editor</p>
+              <div className="flex items-center gap-3">
+                <SignedOut>
+                  <SignInButton fallbackRedirectUrl="/" forceRedirectUrl="/">
+                    <Button variant="outline" size="sm">
+                      Sign In
+                    </Button>
+                  </SignInButton>
+                </SignedOut>
+                <SignedIn>
+                  <UserButton afterSignOutUrl="/" />
+                </SignedIn>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Github className="h-4 w-4" />
+                  View Source
+                </Button>
               </div>
             </div>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Github className="h-4 w-4" />
-              View Source
-            </Button>
-          </div>
         </div>
       </header>
 
@@ -77,62 +90,90 @@ const Index = () => {
 
           {/* Room Management */}
           <div className="max-w-md mx-auto">
-            <Card className="border-2 border-primary/20 shadow-elevation bg-card/90 backdrop-blur-sm">
-              <CardHeader className="text-center pb-4">
-                <CardTitle className="text-2xl">Join a Room</CardTitle>
-                <CardDescription>
-                  Enter a room ID to join an existing session or create a new one
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-3">
-                  <Label htmlFor="roomId" className="text-sm font-medium">
-                    Room ID
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="roomId"
-                      value={roomId}
-                      onChange={(e) => setRoomId(e.target.value.toUpperCase())}
-                      placeholder="Enter room ID"
-                      className="font-mono text-center tracking-wider"
-                      maxLength={6}
-                      onKeyDown={(e) => e.key === 'Enter' && joinRoom()}
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={generateRoomId}
-                      className="shrink-0"
-                    >
-                      Generate
-                    </Button>
+            <SignedIn>
+              <Card className="border-2 border-primary/20 shadow-elevation bg-card/90 backdrop-blur-sm">
+                <CardHeader className="text-center pb-4">
+                  <CardTitle className="text-2xl">Join a Room</CardTitle>
+                  <CardDescription>
+                    Enter a room ID to join an existing session or create a new one
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-3">
+                    <Label htmlFor="roomId" className="text-sm font-medium">
+                      Room ID
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="roomId"
+                        value={roomId}
+                        onChange={(e) => setRoomId(e.target.value.toUpperCase())}
+                        placeholder="Enter room ID"
+                        className="font-mono text-center tracking-wider"
+                        maxLength={6}
+                        onKeyDown={(e) => e.key === 'Enter' && joinRoom()}
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={generateRoomId}
+                        className="shrink-0"
+                      >
+                        Generate
+                      </Button>
+                    </div>
                   </div>
-                </div>
 
-                <Button 
-                  onClick={joinRoom}
-                  className="w-full h-12 text-base font-semibold bg-gradient-primary hover:shadow-glow transition-all duration-300"
-                  disabled={!roomId.trim()}
-                >
-                  Join Room
-                </Button>
+                  <Button 
+                    onClick={joinRoom}
+                    className="w-full h-12 text-base font-semibold bg-gradient-primary hover:shadow-glow transition-all duration-300"
+                    disabled={!roomId.trim()}
+                  >
+                    Join Room
+                  </Button>
 
-                <div className="relative">
-                  <Separator />
-                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-3 text-sm text-muted-foreground">
-                    or
-                  </span>
-                </div>
+                  <div className="relative">
+                    <Separator />
+                    <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-3 text-sm text-muted-foreground">
+                      or
+                    </span>
+                  </div>
 
-                <Button
-                  variant="outline"
-                  onClick={handleCreateRoom}
-                  className="w-full h-12 text-base font-semibold border-accent/50 text-accent hover:bg-accent/10 hover:border-accent hover:shadow-accent-glow transition-all duration-300"
-                >
-                  Create New Room
-                </Button>
-              </CardContent>
-            </Card>
+                  <Button
+                    variant="outline"
+                    onClick={handleCreateRoom}
+                    className="w-full h-12 text-base font-semibold border-accent/50 text-accent hover:bg-accent/10 hover:border-accent hover:shadow-accent-glow transition-all duration-300"
+                  >
+                    Create New Room
+                  </Button>
+                </CardContent>
+              </Card>
+            </SignedIn>
+
+            <SignedOut>
+              <Card className="border-2 border-primary/20 shadow-elevation bg-card/90 backdrop-blur-sm">
+                <CardHeader className="text-center pb-4">
+                  <CardTitle className="text-2xl">Get Started</CardTitle>
+                  <CardDescription>
+                    Sign in to start collaborating with your team
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <SignInButton fallbackRedirectUrl="/" forceRedirectUrl="/">
+                    <Button className="w-full h-12 text-base font-semibold bg-gradient-primary hover:shadow-glow transition-all duration-300">
+                      Sign In to Continue
+                    </Button>
+                  </SignInButton>
+                  <p className="text-center text-sm text-muted-foreground">
+                    New to CodeShare?{" "}
+                    <Button variant="link" className="p-0 h-auto text-primary" asChild>
+                      <SignInButton fallbackRedirectUrl="/" forceRedirectUrl="/" mode="modal">
+                        Create an account
+                      </SignInButton>
+                    </Button>
+                  </p>
+                </CardContent>
+              </Card>
+            </SignedOut>
           </div>
 
           {/* Features */}
