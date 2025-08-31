@@ -33,48 +33,47 @@ const Index = () => {
   };
 
   const handleCreateRoom = async () => {
-    if (creating || !user) return;
-    
+    if (creating) return;
+
     setCreating(true);
-    
+
     try {
       let attempts = 0;
       const maxAttempts = 5;
-      
+
       while (attempts < maxAttempts) {
         const id = Math.random().toString(36).substring(2, 8).toUpperCase();
-        
+
         const { error } = await supabase
           .from('rooms')
           .insert({
             id,
-            owner_id: user.id,
-            owner_email: user.primaryEmailAddress?.emailAddress || null,
+            // owner_id is a UUID in DB; we don't have a UUID from Clerk, so leave it null
+            owner_email: user?.primaryEmailAddress?.emailAddress || null,
             is_active: true,
-            language: 'javascript'
+            language: 'javascript',
           });
-        
+
         if (!error) {
           navigate(`/editor/${id}`);
           return;
         }
-        
+
         // If it's not a primary key conflict, break and show error
         if (!error.message.includes('duplicate key') && !error.message.includes('already exists')) {
           throw error;
         }
-        
+
         attempts++;
       }
-      
+
       throw new Error('Failed to generate unique room ID after multiple attempts');
-      
     } catch (error) {
       console.error('Failed to create room:', error);
       toast({
-        title: "Failed to create room",
-        description: "Please try again in a moment.",
-        variant: "destructive"
+        title: 'Failed to create room',
+        description: 'Please try again in a moment.',
+        variant: 'destructive',
       });
     } finally {
       setCreating(false);
