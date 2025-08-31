@@ -39,18 +39,8 @@ export const useRoom = (roomId: string) => {
                 id: roomId,
                 owner_id: user?.id || null,
                 owner_email: user?.primaryEmailAddress?.emailAddress || null,
-                code_content: `// Welcome to LineCraft - Room ${roomId}
-// Start coding together!
-
-function fibonacci(n) {
-  if (n <= 1) return n;
-  return fibonacci(n - 1) + fibonacci(n - 2);
-}
-
-console.log("Fibonacci sequence:");
-for (let i = 0; i < 10; i++) {
-  console.log(\`F(\${i}) = \${fibonacci(i)}\`);
-}`,
+                code_content: `// Welcome to LineCraft!
+// Start coding together in room ${roomId}`,
                 language: 'javascript'
               }])
               .select()
@@ -59,18 +49,8 @@ for (let i = 0; i < 10; i++) {
             if (createError) {
               console.error('useRoom: Error creating room:', createError);
               // Set default content even if creation fails
-              setCode(`// Welcome to LineCraft - Room ${roomId}
-// Start coding together!
-
-function fibonacci(n) {
-  if (n <= 1) return n;
-  return fibonacci(n - 1) + fibonacci(n - 2);
-}
-
-console.log("Fibonacci sequence:");
-for (let i = 0; i < 10; i++) {
-  console.log(\`F(\${i}) = \${fibonacci(i)}\`);
-}`);
+              setCode(`// Welcome to LineCraft!
+// Start coding together in room ${roomId}`);
               setLanguage('javascript');
               return;
             }
@@ -89,10 +69,8 @@ for (let i = 0; i < 10; i++) {
       } catch (error) {
         console.error('useRoom: Error loading room:', error);
         // Set fallback content on error
-        setCode(`// Welcome to LineCraft - Room ${roomId}
-// Unable to load saved content, but you can start coding!
-
-console.log("Hello, LineCraft!");`);
+        setCode(`// Welcome to LineCraft!
+// Start coding together in room ${roomId}`);
         setLanguage('javascript');
       } finally {
         setLoading(false);
