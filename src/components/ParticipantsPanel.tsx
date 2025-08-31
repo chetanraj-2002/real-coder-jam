@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Crown, Dot, ChevronRight, ChevronDown } from "lucide-react";
+import { Users, Crown, Dot, ChevronRight, ChevronDown, X, PanelRightOpen } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,30 +25,60 @@ interface ParticipantsPanelProps {
 }
 
 export function ParticipantsPanel({ participants, isOwner, currentUserId, onRemove, className }: ParticipantsPanelProps) {
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [panelState, setPanelState] = useState<'open' | 'minimized' | 'closed'>('open');
+
+  if (panelState === 'closed') {
+    return (
+      <div className="fixed right-0 top-1/2 -translate-y-1/2 z-50">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setPanelState('open')}
+          className="rounded-l-md rounded-r-none border-r-0 px-2 py-6 flex flex-col gap-1 bg-card/95 backdrop-blur-sm"
+        >
+          <PanelRightOpen className="h-4 w-4" />
+          <div className="text-xs font-medium writing-mode-vertical-rl transform rotate-180">
+            Participants
+          </div>
+          <Badge variant="secondary" className="text-xs px-1 py-0">
+            {participants.length}
+          </Badge>
+        </Button>
+      </div>
+    );
+  }
 
   return (
-    <Card className={`w-64 border-l border-border transition-all duration-200 ${isMinimized ? 'w-12' : 'w-64'} ${className}`}>
+    <Card className={`border-l border-border transition-all duration-200 ${panelState === 'minimized' ? 'w-12' : 'w-64'} ${className}`}>
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsMinimized(!isMinimized)}
+            onClick={() => setPanelState(panelState === 'minimized' ? 'open' : 'minimized')}
             className="h-6 w-6 p-0"
           >
-            {isMinimized ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            {panelState === 'minimized' ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
           </Button>
-          {!isMinimized && (
+          {panelState === 'open' && (
             <>
               <Users className="h-4 w-4" />
               <span>Participants ({participants.length})</span>
             </>
           )}
-          {isMinimized && <Users className="h-4 w-4" />}
+          {panelState === 'minimized' && <Users className="h-4 w-4" />}
+          <div className="flex-1" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setPanelState('closed')}
+            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-3 w-3" />
+          </Button>
         </CardTitle>
       </CardHeader>
-      {!isMinimized && (
+      {panelState === 'open' && (
         <CardContent className="p-0">
           <ScrollArea className="h-[calc(100vh-200px)]">
             <div className="space-y-2 p-4 pt-0">

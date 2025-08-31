@@ -9,13 +9,13 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Light Theme - Default */
-    --background: 0 0% 100%;
+    --background: 0 0% 98%;
     --foreground: 222.2 84% 4.9%;
 
-    --card: 0 0% 100%;
+    --card: 0 0% 97%;
     --card-foreground: 222.2 84% 4.9%;
 
-    --popover: 0 0% 100%;
+    --popover: 0 0% 97%;
     --popover-foreground: 222.2 84% 4.9%;
 
     /* Primary - Blue to Purple Gradient */
@@ -24,11 +24,11 @@ All colors MUST be HSL.
     --primary-glow: 250 100% 70%;
 
     /* Secondary - Light Gray */
-    --secondary: 210 40% 96%;
+    --secondary: 210 20% 93%;
     --secondary-foreground: 222.2 84% 4.9%;
 
     /* Muted - For inactive elements */
-    --muted: 210 40% 96%;
+    --muted: 210 20% 93%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
     /* Accent - Neon Green for Active States */
@@ -38,7 +38,7 @@ All colors MUST be HSL.
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
+    --border: 214.3 20% 88%;
     --input: 214.3 31.8% 91.4%;
     --ring: 240 85% 60%;
 

@@ -37,16 +37,25 @@ const EditorPage = () => {
   const [collaborationMethod, setCollaborationMethod] = useState<'socket' | 'supabase' | null>(null);
   const [effectiveOwner, setEffectiveOwner] = useState<string | null>(null);
   
-  // Store last room for rejoin functionality
+  // Store room info for rejoining when leaving
   useEffect(() => {
-    if (roomId && user) {
-      const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
-      localStorage.setItem('lastRoom', JSON.stringify({
-        roomId,
-        expiresAt,
-        name: `Room ${roomId}`
-      }));
-    }
+    const handleBeforeUnload = () => {
+      if (roomId && user) {
+        const roomData = {
+          roomId,
+          expiresAt: Date.now() + (5 * 60 * 1000), // 5 minutes from now
+          name: `Room ${roomId}`
+        };
+        localStorage.setItem('lastRoom', JSON.stringify(roomData));
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Also store room info when component unmounts
+      handleBeforeUnload();
+    };
   }, [roomId, user]);
 
   // Redirect to home if not authenticated
@@ -117,13 +126,13 @@ const EditorPage = () => {
 
   const handleKick = useCallback((targetUserId: string) => {
     if (user && targetUserId === user.id) {
-      // Store rejoin token for 5 minutes
-      const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
-      localStorage.setItem('lastRoom', JSON.stringify({
+      // Store rejoin token for 5 minutes when kicked
+      const roomData = {
         roomId,
-        expiresAt,
+        expiresAt: Date.now() + (5 * 60 * 1000), // 5 minutes from now
         name: `Room ${roomId}`
-      }));
+      };
+      localStorage.setItem('lastRoom', JSON.stringify(roomData));
       toast.error("You were removed from the room");
       navigate('/');
     }
@@ -250,7 +259,7 @@ const EditorPage = () => {
       <div className="min-h-screen bg-background flex flex-col relative">
         {/* Light mode subtle background */}
         <div 
-          className="absolute inset-0 opacity-[0.02] dark:opacity-0 bg-cover bg-center bg-no-repeat pointer-events-none"
+          className="absolute inset-0 opacity-[0.06] dark:opacity-0 bg-cover bg-center bg-no-repeat pointer-events-none"
           style={{ backgroundImage: `url(${codingBackground})` }}
         />
       {/* Header */}
