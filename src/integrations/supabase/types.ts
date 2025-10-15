@@ -14,6 +14,313 @@ export type Database = {
   }
   public: {
     Tables: {
+      file_access_requests: {
+        Row: {
+          current_editor_id: string
+          file_id: string
+          id: string
+          message: string | null
+          requested_at: string
+          requester_id: string
+          responded_at: string | null
+          responded_by: string | null
+          status: Database["public"]["Enums"]["access_request_status"] | null
+        }
+        Insert: {
+          current_editor_id: string
+          file_id: string
+          id?: string
+          message?: string | null
+          requested_at?: string
+          requester_id: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: Database["public"]["Enums"]["access_request_status"] | null
+        }
+        Update: {
+          current_editor_id?: string
+          file_id?: string
+          id?: string
+          message?: string | null
+          requested_at?: string
+          requester_id?: string
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: Database["public"]["Enums"]["access_request_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_access_requests_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "project_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      file_permissions: {
+        Row: {
+          can_edit: boolean | null
+          can_request_access: boolean | null
+          collaborator_id: string
+          file_id: string
+          granted_at: string
+          granted_by: string | null
+          id: string
+        }
+        Insert: {
+          can_edit?: boolean | null
+          can_request_access?: boolean | null
+          collaborator_id: string
+          file_id: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+        }
+        Update: {
+          can_edit?: boolean | null
+          can_request_access?: boolean | null
+          collaborator_id?: string
+          file_id?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_permissions_collaborator_id_fkey"
+            columns: ["collaborator_id"]
+            isOneToOne: false
+            referencedRelation: "project_collaborators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "file_permissions_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "project_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      file_versions: {
+        Row: {
+          commit_message: string | null
+          content: string | null
+          created_at: string
+          edited_by: string | null
+          file_id: string
+          id: string
+          version_number: number
+        }
+        Insert: {
+          commit_message?: string | null
+          content?: string | null
+          created_at?: string
+          edited_by?: string | null
+          file_id: string
+          id?: string
+          version_number: number
+        }
+        Update: {
+          commit_message?: string | null
+          content?: string | null
+          created_at?: string
+          edited_by?: string | null
+          file_id?: string
+          id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_versions_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "project_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_activity_logs: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          project_id: string
+          target_file_id: string | null
+          target_user_id: string | null
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          project_id: string
+          target_file_id?: string | null
+          target_user_id?: string | null
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          project_id?: string
+          target_file_id?: string | null
+          target_user_id?: string | null
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_activity_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_collaborators: {
+        Row: {
+          accepted_at: string | null
+          id: string
+          invited_at: string
+          invited_by: string | null
+          is_active: boolean | null
+          permission_level:
+            | Database["public"]["Enums"]["collaborator_permission"]
+            | null
+          project_id: string
+          user_email: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          id?: string
+          invited_at?: string
+          invited_by?: string | null
+          is_active?: boolean | null
+          permission_level?:
+            | Database["public"]["Enums"]["collaborator_permission"]
+            | null
+          project_id: string
+          user_email: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          id?: string
+          invited_at?: string
+          invited_by?: string | null
+          is_active?: boolean | null
+          permission_level?:
+            | Database["public"]["Enums"]["collaborator_permission"]
+            | null
+          project_id?: string
+          user_email?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_collaborators_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_files: {
+        Row: {
+          content: string | null
+          created_at: string
+          file_path: string | null
+          filename: string
+          id: string
+          language: string | null
+          locked_at: string | null
+          locked_by: string | null
+          project_id: string
+          updated_at: string
+          version: number | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          file_path?: string | null
+          filename: string
+          id?: string
+          language?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          project_id: string
+          updated_at?: string
+          version?: number | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          file_path?: string | null
+          filename?: string
+          id?: string
+          language?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          project_id?: string
+          updated_at?: string
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          owner_email: string | null
+          owner_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          owner_email?: string | null
+          owner_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          owner_email?: string | null
+          owner_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       room_events: {
         Row: {
           created_at: string
@@ -137,10 +444,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_edit_file: {
+        Args: { _file_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_project_collaborator: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_project_owner: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
+      unlock_stale_files: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      access_request_status: "pending" | "approved" | "denied" | "cancelled"
+      collaborator_permission: "read_only" | "edit" | "priority_edit"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -267,6 +590,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      access_request_status: ["pending", "approved", "denied", "cancelled"],
+      collaborator_permission: ["read_only", "edit", "priority_edit"],
+    },
   },
 } as const
