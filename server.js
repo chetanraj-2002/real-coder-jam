@@ -34,6 +34,10 @@ const io = new Server(server, {
 // Store active rooms and their participants
 const rooms = new Map();
 
+// Store active projects and their file locks
+const projects = new Map();
+const fileLocks = new Map();
+
 io.on('connection', (socket) => {
   console.log('User connected to LineCraft:', socket.id);
 
@@ -157,6 +161,93 @@ io.on('connection', (socket) => {
 
   socket.on('ping', () => {
     socket.emit('pong');
+  });
+
+  // Project-level events
+  socket.on('join-project', ({ projectId, userId }) => {
+    socket.join(`project_${projectId}`);
+    
+    if (!projects.has(projectId)) {
+      projects.set(projectId, {
+        participants: new Set(),
+        files: new Map()
+      });
+    }
+    
+    const project = projects.get(projectId);
+    project.participants.add(userId);
+    
+    socket.to(`project_${projectId}`).emit('user-joined-project', { userId });
+    console.log(`User ${userId} joined project ${projectId}`);
+  });
+
+  socket.on('leave-project', ({ projectId, userId }) => {
+    socket.leave(`project_${projectId}`);
+    
+    if (projects.has(projectId)) {
+      const project = projects.get(projectId);
+      project.participants.delete(userId);
+      
+      if (project.participants.size === 0) {
+        projects.delete(projectId);
+      }
+    }
+    
+    socket.to(`project_${projectId}`).emit('user-left-project', { userId });
+    console.log(`User ${userId} left project ${projectId}`);
+  });
+
+  // File-level events
+  socket.on('join-file', ({ projectId, fileId, userId }) => {
+    const fileRoom = `file_${projectId}_${fileId}`;
+    socket.join(fileRoom);
+    console.log(`User ${userId} joined file ${fileId} in project ${projectId}`);
+  });
+
+  socket.on('file-lock-acquired', ({ projectId, fileId, userId }) => {
+    const lockKey = `${projectId}_${fileId}`;
+    fileLocks.set(lockKey, { userId, timestamp: Date.now() });
+    
+    socket.to(`project_${projectId}`).emit('file-locked', { fileId, userId });
+    console.log(`File ${fileId} locked by ${userId}`);
+  });
+
+  socket.on('file-lock-released', ({ projectId, fileId }) => {
+    const lockKey = `${projectId}_${fileId}`;
+    fileLocks.delete(lockKey);
+    
+    socket.to(`project_${projectId}`).emit('file-unlocked', { fileId });
+    console.log(`File ${fileId} unlocked`);
+  });
+
+  socket.on('file-content-change', ({ projectId, fileId, content, userId }) => {
+    const fileRoom = `file_${projectId}_${fileId}`;
+    socket.to(fileRoom).emit('file-content-update', { fileId, content, userId });
+  });
+
+  socket.on('access-request-sent', ({ projectId, fileId, requestId, requesterId }) => {
+    socket.to(`project_${projectId}`).emit('access-request-received', {
+      fileId,
+      requestId,
+      requesterId
+    });
+  });
+
+  socket.on('access-request-approved', ({ projectId, fileId, newEditorId }) => {
+    socket.to(`project_${projectId}`).emit('access-transferred', { fileId, newEditorId });
+  });
+
+  socket.on('collaborator-added', ({ projectId, collaborator }) => {
+    socket.to(`project_${projectId}`).emit('collaborator-joined', { collaborator });
+  });
+
+  socket.on('permission-updated', ({ projectId, userId, newPermission }) => {
+    socket.to(`project_${projectId}`).emit('permission-changed', { userId, newPermission });
+  });
+
+  socket.on('file-cursor-change', ({ projectId, fileId, cursor, userId }) => {
+    const fileRoom = `file_${projectId}_${fileId}`;
+    socket.to(fileRoom).emit('cursor-update', { userId, cursor });
   });
 });
 

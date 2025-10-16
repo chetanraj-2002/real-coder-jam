@@ -1,1 +1,16 @@
 project_id = "bzocikmpgvxgpiycwltc"
+
+[functions.create-project]
+verify_jwt = true
+
+[functions.manage-collaborator]
+verify_jwt = true
+
+[functions.manage-file-lock]
+verify_jwt = true
+
+[functions.manage-access-request]
+verify_jwt = true
+
+[functions.manage-file-version]
+verify_jwt = true
