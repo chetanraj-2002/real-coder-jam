@@ -108,6 +108,15 @@ const Index = () => {
             </div>
             <div className="flex items-center gap-3">
               <ThemeToggle />
+              <SignedIn>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => navigate("/projects")}
+                >
+                  My Projects
+                </Button>
+              </SignedIn>
               <SignedOut>
                 <SignInButton fallbackRedirectUrl="/" forceRedirectUrl="/">
                   <Button variant="outline" size="sm" className="backdrop-blur-sm">

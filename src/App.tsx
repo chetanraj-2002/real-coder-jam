@@ -9,6 +9,9 @@ import Index from "./pages/Index";
 import EditorPage from "./pages/EditorPage";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
+import Projects from "./pages/Projects";
+import CreateProject from "./pages/CreateProject";
+import Workspace from "./pages/Workspace";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +32,9 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/projects/new" element={<CreateProject />} />
+                <Route path="/workspace/:projectId" element={<ErrorBoundary><Workspace /></ErrorBoundary>} />
                 <Route path="/editor/:roomId" element={<ErrorBoundary><EditorPage /></ErrorBoundary>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
