@@ -6,16 +6,24 @@ import { useProjectFiles } from "@/hooks/useProjectFiles";
 import { useFileLock } from "@/hooks/useFileLock";
 import { useAccessRequests } from "@/hooks/useAccessRequests";
 import { useRealtime } from "@/hooks/useRealtime";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import FileTree from "@/components/FileTree";
 import CollaboratorsList from "@/components/CollaboratorsList";
 import ActivityFeed from "@/components/ActivityFeed";
 import { CodeEditor } from "@/components/CodeEditor";
 import FileLockModal from "@/components/FileLockModal";
 import AccessRequestNotification from "@/components/AccessRequestNotification";
+import ConnectionStatus from "@/components/ConnectionStatus";
+import { WorkspaceSkeleton } from "@/components/LoadingSkeleton";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Activity } from "lucide-react";
+import { ArrowLeft, Activity, Save, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function Workspace() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -35,7 +43,7 @@ export default function Workspace() {
   const { requests, respondToRequest } = useAccessRequests(projectId!);
 
   // Real-time collaboration
-  const { isConnected, sendCodeChange, sendCursorChange } = useRealtime({
+  const { isConnected, connectionStatus, sendCodeChange, sendCursorChange } = useRealtime({
     roomId: `project:${projectId}`,
     onCodeChange: (newCode) => {
       if (!hasLock) {
@@ -62,6 +70,20 @@ export default function Workspace() {
       console.log("Cursor update:", data);
     },
   });
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts([
+    {
+      key: "s",
+      ctrlKey: true,
+      callback: async () => {
+        if (selectedFile && hasLock) {
+          await releaseLock(code);
+          toast({ title: "Saved", description: "File saved successfully" });
+        }
+      },
+    },
+  ]);
 
   // Load file content when selected
   useEffect(() => {
@@ -139,11 +161,7 @@ export default function Workspace() {
   );
 
   if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div>Loading workspace...</div>
-      </div>
-    );
+    return <WorkspaceSkeleton />;
   }
 
   if (!project) {
@@ -156,7 +174,7 @@ export default function Workspace() {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      <div className="border-b px-4 py-2 flex items-center justify-between">
+      <div className="border-b px-4 py-3 flex items-center justify-between bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -166,11 +184,32 @@ export default function Workspace() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Projects
           </Button>
-          <h1 className="font-semibold text-lg">{project.title}</h1>
-          {isConnected && (
-            <span className="text-xs text-muted-foreground">
-              {participants.length} active
-            </span>
+          <div className="flex items-center gap-3">
+            <h1 className="font-semibold text-lg">{project.title}</h1>
+            <ConnectionStatus status={connectionStatus} participantCount={participants.length} />
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {selectedFile && hasLock && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    await releaseLock(code);
+                    toast({ title: "Saved", description: "File saved successfully" });
+                  }}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Ctrl + S</p>
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
       </div>

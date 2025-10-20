@@ -22,7 +22,7 @@ import {
   Users
 } from "lucide-react";
 import { toast } from "sonner";
-import { ConnectionStatus } from "@/components/ConnectionStatus";
+import ConnectionStatus from "@/components/ConnectionStatus";
 import codingBackground from "@/assets/coding-background.jpg";
 
 const EditorPage = () => {
@@ -388,8 +388,8 @@ const EditorPage = () => {
               )}
               
               <ConnectionStatus 
-                isConnected={isConnected}
-                method={collaborationMethod || 'none'}
+                status={isConnected ? "connected" : "disconnected"}
+                participantCount={participants.length}
               />
               <Button 
                 variant="default" 
