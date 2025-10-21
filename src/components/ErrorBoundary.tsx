@@ -2,7 +2,6 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -49,11 +48,9 @@ interface ErrorFallbackProps {
 }
 
 const ErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetError }) => {
-  const navigate = useNavigate();
-
   const handleGoHome = () => {
-    navigate('/');
-    resetError();
+    // Use window.location to navigate since we might be outside Router context
+    window.location.href = '/';
   };
 
   const handleReload = () => {
