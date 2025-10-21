@@ -79,7 +79,10 @@ export default function Workspace() {
       callback: async () => {
         if (selectedFile && hasLock) {
           await releaseLock(code);
-          toast({ title: "Saved", description: "File saved successfully" });
+          toast({ 
+            title: "✓ Saved", 
+            description: `${selectedFile.filename} saved successfully`,
+          });
         }
       },
     },
@@ -195,21 +198,30 @@ export default function Workspace() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant="default"
                   size="sm"
                   onClick={async () => {
                     await releaseLock(code);
-                    toast({ title: "Saved", description: "File saved successfully" });
+                    toast({ 
+                      title: "✓ Saved", 
+                      description: `${selectedFile.filename} saved successfully`,
+                    });
                   }}
+                  className="bg-green-600 hover:bg-green-700"
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  Save
+                  Save Changes
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Ctrl + S</p>
+                <p>Save file (Ctrl + S)</p>
               </TooltipContent>
             </Tooltip>
+          )}
+          {selectedFile && !hasLock && (
+            <div className="text-sm text-muted-foreground px-3 py-2 bg-muted rounded-md">
+              Read-only mode
+            </div>
           )}
         </div>
       </div>
